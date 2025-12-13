@@ -3,7 +3,13 @@ const cors = require('cors');
 require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
+const customerAuthRoutes = require('./routes/customerAuthRoutes');
 const productRoutes = require('./routes/productRoutes');
+const addressRoutes = require('./routes/addressRoutes');
+const cartRoutes = require('./routes/cartRoutes');
+const wishlistRoutes = require('./routes/wishlistRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const discountRoutes = require('./routes/discountRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
@@ -21,8 +27,14 @@ app.use((req, res, next) => {
 });
 
 // API Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth/admin', authRoutes); // Admin login
+app.use('/api/auth/customer', customerAuthRoutes); // Customer signup/login
 app.use('/api/products', productRoutes);
+app.use('/api/addresses', addressRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/discounts', discountRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Root endpoint
@@ -34,8 +46,14 @@ app.get('/', (req, res) => {
     endpoints: {
       health: '/health',
       products: '/api/products',
-      auth: '/api/auth/login',
-      admin: '/api/admin/health'
+      customerAuth: '/api/auth/customer',
+      adminAuth: '/api/auth/admin',
+      addresses: '/api/addresses',
+      cart: '/api/cart',
+      wishlist: '/api/wishlist',
+      orders: '/api/orders',
+      discounts: '/api/discounts',
+      admin: '/api/admin'
     }
   });
 });

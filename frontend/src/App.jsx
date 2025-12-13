@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
 import Products from './pages/Products';
+import CustomerLogin from './pages/CustomerLogin';
+import CustomerSignup from './pages/CustomerSignup';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
 import './App.css';
@@ -35,6 +37,10 @@ function App() {
             </MainLayout>
           }
         />
+
+        {/* Customer Auth Routes */}
+        <Route path="/login" element={<CustomerLogin />} />
+        <Route path="/signup" element={<CustomerSignup />} />
 
         {/* Admin Routes */}
         <Route path="/admin/login" element={<AdminLogin />} />
