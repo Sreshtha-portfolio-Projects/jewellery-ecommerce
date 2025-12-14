@@ -23,8 +23,13 @@ const authenticateToken = (req, res, next) => {
 // In production, you'd check a user role table or metadata
 const requireAdmin = async (req, res, next) => {
   try {
-    // For now, we check if user email contains 'admin' or check Supabase user metadata
-    // In production, maintain an admin_users table or use Supabase user metadata
+    // First check JWT token role (most efficient)
+    if (req.user.role === 'admin') {
+      req.user.isAdmin = true;
+      return next();
+    }
+
+    // Fallback: Check Supabase user metadata if role not in JWT
     const supabase = require('../config/supabase');
     const { data: userData, error } = await supabase.auth.admin.getUserById(req.user.userId);
     
@@ -33,8 +38,13 @@ const requireAdmin = async (req, res, next) => {
     }
 
     // Check user metadata for admin role
-    const isAdmin = userData.user?.user_metadata?.role === 'admin' || 
-                    userData.user?.email?.includes('admin');
+    const role = userData.user?.user_metadata?.role || 'customer';
+    const email = userData.user?.email?.toLowerCase() || '';
+    const allowedAdminEmails = process.env.ALLOWED_ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || [];
+    
+    const isAdmin = role === 'admin' || 
+                   email.includes('admin') || 
+                   allowedAdminEmails.includes(email);
     
     if (!isAdmin) {
       return res.status(403).json({ message: 'Admin access required' });

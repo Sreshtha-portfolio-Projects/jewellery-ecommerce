@@ -22,14 +22,14 @@ const login = async (req, res) => {
 
     // Verify admin role
     let role = authData.user.user_metadata?.role || 'customer';
-    const email = authData.user.email?.toLowerCase() || '';
+    const userEmail = authData.user.email?.toLowerCase() || '';
     
     // Check for admin: role in metadata, email contains 'admin', or email in allowed list
     const allowedAdminEmails = process.env.ALLOWED_ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || [];
-    let isAdmin = role === 'admin' || email.includes('admin') || allowedAdminEmails.includes(email);
+    let isAdmin = role === 'admin' || userEmail.includes('admin') || allowedAdminEmails.includes(userEmail);
 
     // If user is in allowed list but doesn't have admin role, update their metadata
-    if (!isAdmin && allowedAdminEmails.includes(email)) {
+    if (!isAdmin && allowedAdminEmails.includes(userEmail)) {
       try {
         const { error: updateError } = await supabase.auth.admin.updateUserById(
           authData.user.id,
