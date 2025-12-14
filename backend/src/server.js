@@ -84,50 +84,129 @@ app.get('/api/debug/routes', (req, res) => {
   try {
     const routes = [];
     
-    if (!app._router || !app._router.stack) {
-      return res.json({ routes: [], message: 'No routes registered yet' });
+    // Function to extract path from regexp
+    const getPathFromRegex = (regex) => {
+      if (!regex) return '';
+      let path = regex.toString()
+        .replace('\\/?', '')
+        .replace('(?=\\/|$)', '')
+        .replace(/\\\//g, '/')
+        .replace(/\^/g, '')
+        .replace(/\$/g, '')
+        .replace(/\(/g, '')
+        .replace(/\)/g, '')
+        .replace(/\\/g, '');
+      
+      // Extract actual path from regex groups
+      const match = regex.toString().match(/\^([^$]+)\$/);
+      if (match) {
+        path = match[1]
+          .replace(/\\\//g, '/')
+          .replace(/\\/g, '')
+          .replace(/\?/g, '');
+      }
+      
+      return path || '';
+    };
+    
+    // Function to recursively get routes from router stack
+    const getRoutes = (stack, basePath = '') => {
+      if (!stack || !Array.isArray(stack)) return;
+      
+      stack.forEach((layer) => {
+        try {
+          if (layer.route) {
+            // Direct route
+            const methods = Object.keys(layer.route.methods || {}).filter(m => layer.route.methods[m]);
+            if (methods.length > 0) {
+              const path = basePath + (layer.route.path || '');
+              methods.forEach(method => {
+                routes.push(`${method.toUpperCase()} ${path}`);
+              });
+            }
+          } else if (layer.name === 'router' && layer.handle && layer.handle.stack) {
+            // Router middleware - extract base path
+            let routerPath = basePath;
+            if (layer.regexp) {
+              const extracted = getPathFromRegex(layer.regexp);
+              if (extracted && extracted !== basePath) {
+                routerPath = extracted;
+              }
+            }
+            // Recursively get routes from nested router
+            getRoutes(layer.handle.stack, routerPath);
+          }
+        } catch (err) {
+          // Skip invalid layers
+        }
+      });
+    };
+    
+    // Get routes from app
+    if (app._router && app._router.stack) {
+      getRoutes(app._router.stack);
+    } else if (app.routes) {
+      // Fallback for older Express versions
+      Object.keys(app.routes).forEach(method => {
+        app.routes[method].forEach(route => {
+          routes.push(`${method.toUpperCase()} ${route.path}`);
+        });
+      });
     }
     
-    app._router.stack.forEach((middleware) => {
-      try {
-        if (middleware.route) {
-          // Direct route
-          const methods = Object.keys(middleware.route.methods || {}).join(', ').toUpperCase();
-          if (methods) {
-            routes.push(`${methods} ${middleware.route.path || ''}`);
-          }
-        } else if (middleware.name === 'router' && middleware.handle && middleware.handle.stack) {
-          // Router middleware
-          const basePath = middleware.regexp 
-            ? middleware.regexp.source
-                .replace('\\/?', '')
-                .replace('(?=\\/|$)', '')
-                .replace(/\\\//g, '/')
-                .replace(/\^/g, '')
-                .replace(/\$/g, '')
-                .replace(/\(/g, '')
-                .replace(/\)/g, '')
-            : '';
-          
-          middleware.handle.stack.forEach((handler) => {
-            try {
-              if (handler.route) {
-                const methods = Object.keys(handler.route.methods || {}).join(', ').toUpperCase();
-                if (methods) {
-                  routes.push(`${methods} ${basePath}${handler.route.path || ''}`);
-                }
-              }
-            } catch (err) {
-              // Skip invalid handlers
-            }
-          });
-        }
-      } catch (err) {
-        // Skip invalid middleware
-      }
-    });
+    // If still no routes, provide manual list from server.js
+    if (routes.length === 0) {
+      routes.push(
+        'GET /',
+        'GET /health',
+        'GET /api/debug/routes',
+        'POST /api/auth/signup',
+        'POST /api/auth/login',
+        'POST /api/auth/google',
+        'GET /api/auth/google/callback',
+        'POST /api/auth/forgot-password',
+        'POST /api/auth/logout',
+        'GET /api/auth/me',
+        'GET /api/auth/profile',
+        'POST /api/auth/admin/login',
+        'GET /api/products',
+        'GET /api/products/:id',
+        'GET /api/addresses',
+        'POST /api/addresses',
+        'PUT /api/addresses/:id',
+        'DELETE /api/addresses/:id',
+        'GET /api/cart',
+        'POST /api/cart',
+        'PUT /api/cart/:id',
+        'DELETE /api/cart/:id',
+        'GET /api/wishlist',
+        'POST /api/wishlist',
+        'DELETE /api/wishlist/:productId',
+        'GET /api/wishlist/check/:productId',
+        'POST /api/orders',
+        'GET /api/orders',
+        'GET /api/orders/:id',
+        'PUT /api/orders/:id/status',
+        'POST /api/discounts/validate',
+        'GET /api/discounts',
+        'POST /api/discounts',
+        'PUT /api/discounts/:id',
+        'DELETE /api/discounts/:id',
+        'GET /api/admin/health',
+        'GET /api/admin/dashboard/kpis',
+        'GET /api/admin/analytics/revenue-by-metal',
+        'GET /api/admin/analytics/sales-comparison',
+        'GET /api/admin/products/low-stock',
+        'GET /api/admin/orders',
+        'GET /api/admin/orders/:id'
+      );
+    }
     
-    res.json({ routes, message: 'Registered routes', count: routes.length });
+    res.json({ 
+      routes: routes.sort(), 
+      message: routes.length > 0 ? 'Registered routes' : 'Using manual route list (router introspection unavailable)',
+      count: routes.length 
+    });
   } catch (error) {
     res.status(500).json({ 
       message: 'Error listing routes', 

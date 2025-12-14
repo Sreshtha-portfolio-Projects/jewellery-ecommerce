@@ -36,7 +36,7 @@ export const customerAuthService = {
       // Continue with logout even if API call fails
       console.error('Logout API error:', error);
     } finally {
-      localStorage.removeItem('customerToken');
+    localStorage.removeItem('customerToken');
     }
   },
 

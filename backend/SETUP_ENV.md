@@ -46,7 +46,12 @@ BACKEND_URL=http://localhost:3000
      - Example: `https://abcdefghijklmnop.supabase.co`
    - **service_role key** → This is your `SUPABASE_SERVICE_ROLE_KEY`
      - ⚠️ **Keep this secret!** Never commit it to git
-     - It's the long key under "Project API keys" → "service_role" (not "anon")
+     - It's the long key under "Project API keys" → **"service_role"** (NOT "anon" or "anon public")
+     - **How to identify it:**
+       - Look for the key labeled **"service_role"** (usually shown with a warning icon)
+       - The JWT payload will have `"role": "service_role"` (not `"role": "anon"`)
+       - It's typically longer than the anon key
+       - ⚠️ **CRITICAL**: Using the wrong key (anon) will cause "permission denied" errors
 
 ### Step 4: Generate JWT Secret
 
@@ -75,6 +80,26 @@ You should see:
 ✅ SUPABASE_SERVICE_ROLE_KEY: eyJhbGc...
 ✅ JWT_SECRET: your-secret...
 ```
+
+**IMPORTANT: Verify you're using the correct key:**
+
+```bash
+node verify-env-key.js
+```
+
+This will check if your `SUPABASE_SERVICE_ROLE_KEY` is actually the **service_role** key (not anon).
+
+You should see:
+```
+✅ CORRECT! You are using the service_role key.
+```
+
+If you see:
+```
+❌ WRONG KEY! You are using the anon key instead of service_role.
+```
+
+Then you need to get the correct service_role key from Supabase Dashboard.
 
 ### Step 6: Verify Routes
 
