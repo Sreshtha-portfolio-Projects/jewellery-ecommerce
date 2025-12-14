@@ -21,11 +21,43 @@ const login = async (req, res) => {
     }
 
     // Verify admin role
-    const role = authData.user.user_metadata?.role || 'customer';
-    const isAdmin = role === 'admin' || authData.user.email?.includes('admin');
+    let role = authData.user.user_metadata?.role || 'customer';
+    const email = authData.user.email?.toLowerCase() || '';
+    
+    // Check for admin: role in metadata, email contains 'admin', or email in allowed list
+    const allowedAdminEmails = process.env.ALLOWED_ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || [];
+    let isAdmin = role === 'admin' || email.includes('admin') || allowedAdminEmails.includes(email);
+
+    // If user is in allowed list but doesn't have admin role, update their metadata
+    if (!isAdmin && allowedAdminEmails.includes(email)) {
+      try {
+        const { error: updateError } = await supabase.auth.admin.updateUserById(
+          authData.user.id,
+          {
+            user_metadata: {
+              ...authData.user.user_metadata,
+              role: 'admin'
+            }
+          }
+        );
+        if (!updateError) {
+          role = 'admin';
+          isAdmin = true;
+        }
+      } catch (err) {
+        console.error('Error updating user metadata:', err);
+      }
+    }
 
     if (!isAdmin) {
-      return res.status(403).json({ message: 'Admin access required' });
+      console.log('Admin check failed:', { 
+        email: authData.user.email, 
+        role, 
+        user_metadata: authData.user.user_metadata 
+      });
+      return res.status(403).json({ 
+        message: 'Admin access required. Your email must contain "admin", be in ALLOWED_ADMIN_EMAILS, or your account must have role="admin" in user metadata.' 
+      });
     }
 
     // Generate JWT token

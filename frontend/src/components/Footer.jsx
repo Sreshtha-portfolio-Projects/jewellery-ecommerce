@@ -89,7 +89,7 @@ const Footer = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="text-sm text-gray-600">© 2023 PoorGem. All rights reserved.</div>
-            <div className="text-2xl font-serif font-bold text-gray-900">PoorGem</div>
+            <div className="text-2xl font-serif font-bold text-gray-900">Al-Dorado Jewells</div>
             <div className="flex items-center gap-6">
               <div className="flex gap-4 text-sm">
                 <Link to="/products" className="text-gray-600 hover:text-rose-700">SHOP</Link>

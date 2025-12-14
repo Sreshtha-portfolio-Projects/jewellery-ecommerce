@@ -10,7 +10,7 @@ const Header = () => {
       <div className="bg-rose-50 border-b border-rose-100 py-2">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between text-sm">
-            <div className="text-rose-800 font-medium">Poor Gem</div>
+            <div className="text-rose-800 font-medium">Aldorado Jewells</div>
             <div className="text-rose-700">DISCOVER OUR NEW ARRIVALS</div>
             <div className="flex items-center gap-4">
               <button className="text-rose-700 hover:text-rose-900">
@@ -37,7 +37,7 @@ const Header = () => {
       <nav className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="text-2xl font-serif font-bold text-gray-900 hover:text-rose-700 transition-colors">
-            Poor Gem
+          Aldorado Jewells
           </Link>
           
           {/* Desktop Menu */}
