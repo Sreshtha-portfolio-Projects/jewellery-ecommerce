@@ -1,4 +1,8 @@
+import { useNavigate } from 'react-router-dom';
+
 const PromotionalBanner = ({ image, title, description, buttonText, reverse = false }) => {
+  const navigate = useNavigate();
+
   return (
     <div className={`grid grid-cols-1 md:grid-cols-2 gap-0 ${reverse ? 'md:flex-row-reverse' : ''}`}>
       <div className="aspect-square md:aspect-auto md:h-[400px] bg-beige-100 overflow-hidden">
@@ -16,7 +20,10 @@ const PromotionalBanner = ({ image, title, description, buttonText, reverse = fa
         <div className="max-w-md">
           <h3 className="font-serif text-3xl font-bold text-gray-900 mb-4">{title}</h3>
           <p className="text-gray-600 mb-6 leading-relaxed">{description}</p>
-          <button className="px-8 py-3 bg-rose-600 text-white rounded hover:bg-rose-700 transition-colors font-medium">
+          <button 
+            onClick={() => navigate('/products')}
+            className="px-8 py-3 bg-rose-600 text-white rounded hover:bg-rose-700 transition-all duration-300 font-medium transform hover:scale-105 hover:shadow-lg"
+          >
             {buttonText}
           </button>
         </div>

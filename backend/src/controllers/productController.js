@@ -2,12 +2,16 @@ const supabase = require('../config/supabase');
 
 const getAllProducts = async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, search } = req.query;
 
     let query = supabase.from('products').select('*').order('created_at', { ascending: false });
 
     if (category) {
       query = query.eq('category', category);
+    }
+
+    if (search) {
+      query = query.or(`name.ilike.%${search}%,category.ilike.%${search}%`);
     }
 
     const { data, error } = await query;

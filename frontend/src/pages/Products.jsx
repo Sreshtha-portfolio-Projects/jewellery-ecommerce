@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { productService } from '../services/productService';
 import ProductCard from '../components/ProductCard';
 
 const Products = () => {
   const { category } = useParams();
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -12,9 +13,18 @@ const Products = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const data = category
-          ? await productService.getByCategory(category)
-          : await productService.getAll();
+        const search = searchParams.get('search');
+        const shape = searchParams.get('shape');
+        
+        let data;
+        if (search) {
+          data = await productService.search(search);
+        } else if (category) {
+          data = await productService.getByCategory(category);
+        } else {
+          data = await productService.getAll();
+        }
+        
         setProducts(data);
       } catch (error) {
         console.error('Error fetching products:', error);
@@ -23,9 +33,14 @@ const Products = () => {
       }
     };
     fetchProducts();
-  }, [category]);
+  }, [category, searchParams]);
 
-  const categoryTitle = category ? category.charAt(0).toUpperCase() + category.slice(1) : 'All Products';
+  const searchTerm = searchParams.get('search');
+  const categoryTitle = searchTerm 
+    ? `Search Results for "${searchTerm}"`
+    : category 
+      ? category.charAt(0).toUpperCase() + category.slice(1) 
+      : 'All Products';
 
   return (
     <div className="min-h-screen bg-beige-50 py-12">

@@ -52,7 +52,7 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="font-serif text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-              <p className="text-gray-600">Welcome to the Poor Gem admin panel</p>
+              <p className="text-gray-600">Welcome to the Aldorado Jewells admin panel</p>
             </div>
             <button
               onClick={handleLogout}

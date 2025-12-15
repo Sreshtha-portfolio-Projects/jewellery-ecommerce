@@ -1,4 +1,8 @@
+import { useNavigate } from 'react-router-dom';
+
 const Hero = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="relative h-[600px] md:h-[700px] bg-beige-200 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-r from-beige-100/80 to-transparent z-10"></div>
@@ -12,7 +16,10 @@ const Hero = () => {
           <p className="text-lg text-gray-700 mb-8">
             Discover our exquisite collection of handcrafted pieces that celebrate elegance and timeless beauty.
           </p>
-          <button className="px-8 py-3 bg-rose-600 text-white rounded hover:bg-rose-700 transition-colors font-medium">
+          <button 
+            onClick={() => navigate('/products')}
+            className="px-8 py-3 bg-rose-600 text-white rounded hover:bg-rose-700 transition-all duration-300 font-medium transform hover:scale-105 hover:shadow-lg"
+          >
             Shop Now
           </button>
         </div>

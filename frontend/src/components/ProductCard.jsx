@@ -1,9 +1,31 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 const ProductCard = ({ product }) => {
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const { isAuthenticated } = useAuth();
+
+  const handleAddToCart = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      await addToCart(product.id, 1);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+    }
+  };
+
   return (
     <div className="group relative bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
-      <Link to={`/products/${product.id}`}>
+      <Link to={`/product/${product.id}`} className="block">
         <div className="aspect-square overflow-hidden bg-beige-100">
           {product.image_url ? (
             <img
@@ -31,11 +53,16 @@ const ProductCard = ({ product }) => {
               </svg>
             </div>
           </div>
-          <button className="mt-4 w-full py-2 bg-rose-600 text-white rounded hover:bg-rose-700 transition-colors opacity-0 group-hover:opacity-100">
-            Add to Cart
-          </button>
         </div>
       </Link>
+      <div className="px-4 pb-4">
+        <button 
+          onClick={handleAddToCart}
+          className="w-full py-2 bg-rose-600 text-white rounded hover:bg-rose-700 transition-colors opacity-0 group-hover:opacity-100"
+        >
+          Add to Cart
+        </button>
+      </div>
     </div>
   );
 };

@@ -42,7 +42,7 @@ const CustomerLogin = () => {
     <div className="min-h-screen bg-beige-50 flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         <div className="text-center mb-8">
-          <h1 className="font-serif text-3xl font-bold text-gray-900 mb-2">Aldorado Jewels</h1>
+          <h1 className="font-serif text-3xl font-bold text-gray-900 mb-2">Aldorado Jewells</h1>
           <h2 className="text-xl font-semibold text-gray-700">Customer Login</h2>
         </div>
 

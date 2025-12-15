@@ -6,6 +6,13 @@ import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 import AccountLayout from './components/account/AccountLayout';
 import Home from './pages/Home';
 import Products from './pages/Products';
+import About from './pages/About';
+import Contact from './pages/Contact';
+import Privacy from './pages/Privacy';
+import Blog from './pages/Blog';
+import ProductDetail from './pages/ProductDetail';
+import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
 import CustomerLogin from './pages/CustomerLogin';
 import CustomerSignup from './pages/CustomerSignup';
 import ForgotPassword from './pages/ForgotPassword';
@@ -47,10 +54,66 @@ function App() {
           }
         />
         <Route
+          path="/product/:id"
+          element={
+            <MainLayout>
+              <ProductDetail />
+            </MainLayout>
+          }
+        />
+        <Route
           path="/products/:category"
           element={
             <MainLayout>
               <Products />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/cart"
+          element={
+            <MainLayout>
+              <Cart />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/checkout"
+          element={
+            <MainLayout>
+              <Checkout />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/about"
+          element={
+            <MainLayout>
+              <About />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/contact"
+          element={
+            <MainLayout>
+              <Contact />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/privacy"
+          element={
+            <MainLayout>
+              <Privacy />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/blog"
+          element={
+            <MainLayout>
+              <Blog />
             </MainLayout>
           }
         />

@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
+import { discountService } from '../../services/discountService';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [kpis, setKpis] = useState(null);
   const [orders, setOrders] = useState([]);
   const [revenueByMetal, setRevenueByMetal] = useState(null);
@@ -148,6 +151,7 @@ const Dashboard = () => {
             icon="🛒"
             color="red"
             tag="Recovery Needed"
+            description="Carts inactive for 24+ hours (Recovery automation coming soon)"
           />
         </div>
 
@@ -171,20 +175,20 @@ const Dashboard = () => {
           {/* Analytics Sidebar */}
           <div className="space-y-6">
             <RevenueBreakdown revenueByMetal={revenueByMetal} formatCurrency={formatCurrency} />
-            <OnlineVsOfflineSales />
+            <OnlineVsOfflineSales kpis={kpis} />
           </div>
         </div>
 
         {/* Discount & Promotions */}
         <div className="mt-8">
-          <DiscountPromotions />
+          <DiscountPromotions navigate={navigate} />
         </div>
       </div>
     </div>
   );
 };
 
-const KPICard = ({ title, value, icon, color, tag, trend }) => {
+const KPICard = ({ title, value, icon, color, tag, trend, description }) => {
   const colorClasses = {
     blue: 'bg-blue-50 border-blue-200',
     yellow: 'bg-yellow-50 border-yellow-200',
@@ -219,6 +223,9 @@ const KPICard = ({ title, value, icon, color, tag, trend }) => {
           </span>
         )}
       </div>
+      {description && (
+        <p className="text-xs text-gray-500 mt-2">{description}</p>
+      )}
     </div>
   );
 };
@@ -456,12 +463,18 @@ const RevenueBreakdown = ({ revenueByMetal, formatCurrency }) => {
   );
 };
 
-const OnlineVsOfflineSales = () => {
-  // Mock data for the chart
-  const months = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const onlineData = [12000, 15000, 18000, 14000, 20000, 22000, 19000];
-  const offlineData = [8000, 10000, 12000, 9000, 15000, 18000, 16000];
-  const maxValue = Math.max(...onlineData, ...offlineData);
+const OnlineVsOfflineSales = ({ kpis }) => {
+  // Use real data from KPIs
+  const onlineRevenue = kpis?.onlineRevenue || 0;
+  const offlineRevenue = kpis?.offlineRevenue || 0;
+  const totalRevenue = onlineRevenue + offlineRevenue;
+  
+  // For chart visualization, show last 7 days (simplified)
+  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  // Distribute revenue across days (simplified - in production, fetch daily data)
+  const onlineData = days.map(() => onlineRevenue / 7);
+  const offlineData = days.map(() => offlineRevenue / 7);
+  const maxValue = Math.max(...onlineData, ...offlineData, 1);
 
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
@@ -488,18 +501,50 @@ const OnlineVsOfflineSales = () => {
       <div className="flex gap-4 mt-4 pt-4 border-t border-gray-200">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-blue-500 rounded"></div>
-          <span className="text-xs text-gray-600">Online</span>
+          <span className="text-xs text-gray-600">
+            Online: ₹{onlineRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-orange-500 rounded"></div>
-          <span className="text-xs text-gray-600">Offline</span>
+          <span className="text-xs text-gray-600">
+            Offline: ₹{offlineRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+          </span>
         </div>
       </div>
+      <p className="text-xs text-gray-500 mt-2">
+        Online: Orders placed via website. Offline: Manual orders (coming soon).
+      </p>
     </div>
   );
 };
 
-const DiscountPromotions = () => {
+const DiscountPromotions = ({ navigate }) => {
+  const [discounts, setDiscounts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  useEffect(() => {
+    fetchDiscounts();
+  }, []);
+
+  const fetchDiscounts = async () => {
+    try {
+      setLoading(true);
+      const data = await discountService.getAll();
+      setDiscounts(data || []);
+    } catch (error) {
+      console.error('Error fetching discounts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const activeDiscounts = discounts.filter(d => d.is_active && (!d.expires_at || new Date(d.expires_at) > new Date()));
+  const expiredDiscounts = discounts.filter(d => !d.is_active || (d.expires_at && new Date(d.expires_at) <= new Date()));
+  const percentageDiscounts = activeDiscounts.filter(d => d.discount_type === 'percentage');
+  const flatDiscounts = activeDiscounts.filter(d => d.discount_type === 'flat');
+
   return (
     <div className="bg-white rounded-lg shadow-sm p-6">
       <div className="flex items-center justify-between mb-6">
@@ -509,8 +554,11 @@ const DiscountPromotions = () => {
           </div>
           <h3 className="font-semibold text-gray-900">Discount & Promotions</h3>
         </div>
-        <button className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium">
-          + Add Discount
+        <button 
+          onClick={() => navigate('/admin/discounts')}
+          className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
+        >
+          + Create Discount
         </button>
       </div>
 
@@ -519,7 +567,7 @@ const DiscountPromotions = () => {
           <div className="flex items-center gap-3">
             <span className="text-2xl">✅</span>
             <div>
-              <p className="font-semibold text-gray-900">% Active</p>
+              <p className="font-semibold text-gray-900">{percentageDiscounts.length} Active</p>
               <p className="text-xs text-gray-600">Percentage discounts</p>
             </div>
           </div>
@@ -531,7 +579,7 @@ const DiscountPromotions = () => {
           <div className="flex items-center gap-3">
             <span className="text-2xl">@</span>
             <div>
-              <p className="font-semibold text-gray-900">@ Active</p>
+              <p className="font-semibold text-gray-900">{flatDiscounts.length} Active</p>
               <p className="text-xs text-gray-600">Flat discount codes</p>
             </div>
           </div>
@@ -541,14 +589,14 @@ const DiscountPromotions = () => {
         </div>
         <div className="border-2 border-yellow-200 bg-yellow-50 rounded-lg p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">👤</span>
+            <span className="text-2xl">⏰</span>
             <div>
-              <p className="font-semibold text-gray-900">Soon</p>
-              <p className="text-xs text-gray-600">Customer-specific offers</p>
+              <p className="font-semibold text-gray-900">{expiredDiscounts.length} Expired</p>
+              <p className="text-xs text-gray-600">Expired discounts</p>
             </div>
           </div>
           <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full font-medium">
-            Soon
+            Expired
           </span>
         </div>
       </div>

@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 const Testimonials = () => {
   const testimonials = [
     {
@@ -18,22 +20,63 @@ const Testimonials = () => {
       text: 'The attention to detail is remarkable. These pieces have become my go-to for special occasions.',
       rating: 5,
     },
+    {
+      name: 'Maria L.',
+      quote: 'Exquisite quality and service!',
+      text: 'From browsing to delivery, every step was seamless. The jewelry is even more beautiful in person.',
+      rating: 5,
+    },
+    {
+      name: 'Sophie K.',
+      quote: 'A true treasure!',
+      text: 'I found the perfect engagement ring here. The staff was incredibly helpful and the ring is absolutely stunning.',
+      rating: 5,
+    },
   ];
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const itemsPerPage = 3;
+  const maxIndex = Math.max(0, testimonials.length - itemsPerPage);
+
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => Math.max(0, prev - 1));
+  };
+
+  const goToNext = () => {
+    setCurrentIndex((prev) => Math.min(maxIndex, prev + 1));
+  };
+
+  const visibleTestimonials = testimonials.slice(currentIndex, currentIndex + itemsPerPage);
 
   return (
     <section className="py-16 bg-beige-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between mb-8">
           <h2 className="font-serif text-3xl font-bold text-gray-900">Testimonials</h2>
-          <button className="text-rose-600 hover:text-rose-700">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={goToPrevious}
+              disabled={currentIndex === 0}
+              className="text-rose-600 hover:text-rose-700 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={goToNext}
+              disabled={currentIndex >= maxIndex}
+              className="text-rose-600 hover:text-rose-700 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, index) => (
-            <div key={index} className="bg-white p-6 rounded-lg shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 transition-all duration-300">
+          {visibleTestimonials.map((testimonial, index) => (
+            <div key={currentIndex + index} className="bg-white p-6 rounded-lg shadow-sm">
               <div className="flex items-center mb-4">
                 <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center text-rose-700 font-semibold mr-4">
                   {testimonial.name.charAt(0)}

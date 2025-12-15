@@ -15,5 +15,10 @@ export const productService = {
     const response = await api.get(`/products?category=${category}`);
     return response.data;
   },
+
+  search: async (searchTerm) => {
+    const response = await api.get(`/products?search=${encodeURIComponent(searchTerm)}`);
+    return response.data;
+  },
 };
 
