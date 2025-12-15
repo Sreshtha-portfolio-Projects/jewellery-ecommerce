@@ -24,9 +24,13 @@ import Wishlist from './pages/account/Wishlist';
 import Addresses from './pages/account/Addresses';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/admin/Dashboard';
+import AdminProducts from './pages/admin/Products';
+import ProductForm from './pages/admin/ProductForm';
+import BulkOperations from './pages/admin/BulkOperations';
 import AdminOrders from './pages/admin/Orders';
 import AdminAnalytics from './pages/admin/Analytics';
 import AdminDiscounts from './pages/admin/Discounts';
+import AdminPricingRules from './pages/admin/PricingRules';
 import AdminAbandonedCarts from './pages/admin/AbandonedCarts';
 import AdminCustomers from './pages/admin/Customers';
 import AdminSettings from './pages/admin/Settings';
@@ -154,9 +158,14 @@ function App() {
         >
           <Route index element={<AdminDashboard />} />
           <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="products" element={<AdminProducts />} />
+          <Route path="products/new" element={<ProductForm />} />
+          <Route path="products/:id" element={<ProductForm />} />
+          <Route path="products/bulk" element={<BulkOperations />} />
           <Route path="orders" element={<AdminOrders />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="discounts" element={<AdminDiscounts />} />
+          <Route path="pricing-rules" element={<AdminPricingRules />} />
           <Route path="abandoned-carts" element={<AdminAbandonedCarts />} />
           <Route path="customers" element={<AdminCustomers />} />
           <Route path="settings" element={<AdminSettings />} />

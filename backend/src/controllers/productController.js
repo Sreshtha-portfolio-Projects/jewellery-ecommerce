@@ -28,22 +28,70 @@ const getAllProducts = async (req, res) => {
   }
 };
 
+const { applyPricingRules } = require('./adminPricingController');
+
 const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
+    const { variantId } = req.query; // Optional variant ID for price calculation
 
-    const { data, error } = await supabase
+    // Get product with images and active offers
+    const { data: product, error: productError } = await supabase
       .from('products')
       .select('*')
       .eq('id', id)
       .single();
 
-    if (error) {
-      console.error('Error fetching product:', error);
+    if (productError || !product) {
+      console.error('Error fetching product:', productError);
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    res.json(data);
+    // Get product variants
+    const { data: variants } = await supabase
+      .from('product_variants')
+      .select('*')
+      .eq('product_id', id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true });
+
+    // Get selected variant if variantId provided
+    let selectedVariant = null;
+    if (variantId) {
+      selectedVariant = variants?.find(v => v.id === variantId) || null;
+    }
+
+    // Get product images
+    const { data: images } = await supabase
+      .from('product_images')
+      .select('*')
+      .eq('product_id', id)
+      .order('display_order', { ascending: true });
+
+    // Get active offers
+    const { data: offers } = await supabase
+      .from('product_offers')
+      .select('*')
+      .eq('product_id', id)
+      .eq('is_active', true)
+      .or(`valid_until.is.null,valid_until.gt.${new Date().toISOString()}`)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    // Apply pricing rules
+    const finalPrice = await applyPricingRules(product, selectedVariant);
+
+    // Format response
+    const response = {
+      ...product,
+      price: finalPrice, // Override with calculated price
+      variants: variants || [],
+      selected_variant: selectedVariant,
+      images: images && images.length > 0 ? images : [{ image_url: product.image_url, is_primary: true }],
+      offer: offers && offers.length > 0 ? offers[0] : null
+    };
+
+    res.json(response);
   } catch (error) {
     console.error('Error in getProductById:', error);
     res.status(500).json({ message: 'Internal server error' });

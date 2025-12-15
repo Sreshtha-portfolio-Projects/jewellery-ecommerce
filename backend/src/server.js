@@ -12,6 +12,11 @@ const orderRoutes = require('./routes/orderRoutes');
 const discountRoutes = require('./routes/discountRoutes');
 const shipmentRoutes = require('./routes/shipmentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const deliveryRoutes = require('./routes/deliveryRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+const productPairingRoutes = require('./routes/productPairingRoutes');
+const adminProductRoutes = require('./routes/adminProductRoutes');
+const adminPricingRoutes = require('./routes/adminPricingRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +25,18 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Disable caching for API responses (especially important in development)
+app.use((req, res, next) => {
+  // Disable caching for all API routes
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+    'ETag': false
+  });
+  next();
+});
 
 // Request logging
 app.use((req, res, next) => {
@@ -39,6 +56,11 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/discounts', discountRoutes);
 app.use('/api/shipments', shipmentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/delivery', deliveryRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/product-pairings', productPairingRoutes);
+app.use('/api/admin/products', adminProductRoutes);
+app.use('/api/admin/pricing-rules', adminPricingRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

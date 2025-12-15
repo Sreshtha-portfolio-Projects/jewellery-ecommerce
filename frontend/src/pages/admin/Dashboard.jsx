@@ -461,7 +461,7 @@ const OnlineVsOfflineSales = ({ kpis }) => {
       <h3 className="font-semibold text-gray-900 mb-6">Online vs Offline Sales</h3>
       <div className="space-y-2">
         {days.map((day, index) => (
-          <div key={month} className="flex items-center gap-2">
+          <div key={day} className="flex items-center gap-2">
             <div className="w-12 text-xs text-gray-600">{day}</div>
             <div className="flex-1 flex gap-1">
               <div

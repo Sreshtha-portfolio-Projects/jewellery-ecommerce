@@ -7,9 +7,11 @@ const AdminLayout = () => {
 
   const menuItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
+    { path: '/admin/products', label: 'Products', icon: '💎' },
     { path: '/admin/orders', label: 'Orders', icon: '📦' },
     { path: '/admin/analytics', label: 'Analytics', icon: '📈' },
     { path: '/admin/discounts', label: 'Discounts', icon: '🎫' },
+    { path: '/admin/pricing-rules', label: 'Pricing Rules', icon: '💰' },
     { path: '/admin/abandoned-carts', label: 'Abandoned Carts', icon: '🛒' },
     { path: '/admin/customers', label: 'Customers', icon: '👥' },
     { path: '/admin/settings', label: 'Settings', icon: '⚙️' },
