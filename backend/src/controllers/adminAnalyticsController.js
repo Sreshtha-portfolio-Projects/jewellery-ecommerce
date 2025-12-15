@@ -30,16 +30,21 @@ const getDashboardKPIs = async (req, res) => {
 
     const statusCounts = {
       pending: 0,
+      PAYMENT_PENDING: 0,
       paid: 0,
       shipped: 0,
       delivered: 0,
       returned: 0,
-      cancelled: 0
+      cancelled: 0,
+      FAILED: 0
     };
 
     (ordersByStatus || []).forEach(order => {
-      if (statusCounts.hasOwnProperty(order.status)) {
-        statusCounts[order.status]++;
+      const status = order.status?.toUpperCase();
+      if (statusCounts.hasOwnProperty(status)) {
+        statusCounts[status]++;
+      } else if (status === 'PAYMENT_PENDING') {
+        statusCounts.PAYMENT_PENDING++;
       }
     });
 
@@ -111,7 +116,7 @@ const getDashboardKPIs = async (req, res) => {
 
     res.json({
       totalOrders: totalOrders || 0,
-      pendingOrders: statusCounts.pending + (statusCounts.PAYMENT_PENDING || 0),
+      pendingOrders: statusCounts.pending + statusCounts.PAYMENT_PENDING,
       shippedOrders: statusCounts.shipped,
       deliveredOrders: statusCounts.delivered,
       returnedOrders: statusCounts.returned,

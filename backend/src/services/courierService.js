@@ -6,6 +6,122 @@ const supabase = require('../config/supabase');
  * Pluggable architecture - easy to add new couriers
  */
 
+/**
+ * Shiprocket Provider
+ */
+class ShiprocketProvider {
+  async createShipment({ order, orderItems, address }) {
+    // TODO: Implement actual Shiprocket API integration
+    // For now, return mock data
+    const trackingNumber = `SR${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    
+    return {
+      courierName: 'Shiprocket',
+      trackingNumber,
+      awbNumber: trackingNumber,
+      estimatedDelivery: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days
+      rawResponse: { mock: true, provider: 'shiprocket' }
+    };
+  }
+
+  async getTracking(trackingNumber) {
+    // TODO: Implement actual tracking API
+    return {
+      status: 'IN_TRANSIT',
+      currentLocation: 'Mumbai Hub',
+      events: [
+        { timestamp: new Date().toISOString(), status: 'SHIPPED', location: 'Origin' },
+        { timestamp: new Date().toISOString(), status: 'IN_TRANSIT', location: 'Mumbai Hub' }
+      ],
+      deliveredAt: null
+    };
+  }
+}
+
+/**
+ * Delhivery Provider
+ */
+class DelhiveryProvider {
+  async createShipment({ order, orderItems, address }) {
+    const trackingNumber = `DL${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    
+    return {
+      courierName: 'Delhivery',
+      trackingNumber,
+      awbNumber: trackingNumber,
+      estimatedDelivery: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+      rawResponse: { mock: true, provider: 'delhivery' }
+    };
+  }
+
+  async getTracking(trackingNumber) {
+    return {
+      status: 'IN_TRANSIT',
+      currentLocation: 'Delhi Hub',
+      events: [
+        { timestamp: new Date().toISOString(), status: 'SHIPPED', location: 'Origin' },
+        { timestamp: new Date().toISOString(), status: 'IN_TRANSIT', location: 'Delhi Hub' }
+      ],
+      deliveredAt: null
+    };
+  }
+}
+
+/**
+ * Blue Dart Provider
+ */
+class BlueDartProvider {
+  async createShipment({ order, orderItems, address }) {
+    const trackingNumber = `BD${Date.now()}${Math.floor(Math.random() * 1000)}`;
+    
+    return {
+      courierName: 'Blue Dart',
+      trackingNumber,
+      awbNumber: trackingNumber,
+      estimatedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+      rawResponse: { mock: true, provider: 'bluedart' }
+    };
+  }
+
+  async getTracking(trackingNumber) {
+    return {
+      status: 'IN_TRANSIT',
+      currentLocation: 'Bangalore Hub',
+      events: [
+        { timestamp: new Date().toISOString(), status: 'SHIPPED', location: 'Origin' },
+        { timestamp: new Date().toISOString(), status: 'IN_TRANSIT', location: 'Bangalore Hub' }
+      ],
+      deliveredAt: null
+    };
+  }
+}
+
+/**
+ * Manual Provider (for manual shipping)
+ */
+class ManualProvider {
+  async createShipment({ order, orderItems, address }) {
+    // Manual provider - admin enters tracking details
+    return {
+      courierName: 'Manual',
+      trackingNumber: `MANUAL-${order.order_number}`,
+      awbNumber: null,
+      estimatedDelivery: null,
+      rawResponse: { manual: true }
+    };
+  }
+
+  async getTracking(trackingNumber) {
+    // Manual tracking - status updated by admin
+    return {
+      status: 'SHIPPED',
+      currentLocation: 'Manual Entry',
+      events: [],
+      deliveredAt: null
+    };
+  }
+}
+
 class CourierService {
   constructor() {
     this.providers = {
@@ -35,11 +151,15 @@ class CourierService {
         throw new Error('Order not found');
       }
 
-      if (order.status !== 'paid') {
+      // Check if order is paid (handle both 'paid' status and payment_status)
+      const isPaid = order.status === 'paid' || order.payment_status === 'captured';
+      if (!isPaid) {
         throw new Error('Order must be paid before creating shipment');
       }
 
-      if (order.shipment_status !== 'NOT_SHIPPED') {
+      // Check shipment status (handle null/undefined as NOT_SHIPPED)
+      const shipmentStatus = order.shipment_status || 'NOT_SHIPPED';
+      if (shipmentStatus !== 'NOT_SHIPPED') {
         throw new Error('Shipment already created');
       }
 
@@ -174,122 +294,6 @@ class CourierService {
       console.error('Error updating tracking:', error);
       throw error;
     }
-  }
-}
-
-/**
- * Shiprocket Provider
- */
-class ShiprocketProvider {
-  async createShipment({ order, orderItems, address }) {
-    // TODO: Implement actual Shiprocket API integration
-    // For now, return mock data
-    const trackingNumber = `SR${Date.now()}${Math.floor(Math.random() * 1000)}`;
-    
-    return {
-      courierName: 'Shiprocket',
-      trackingNumber,
-      awbNumber: trackingNumber,
-      estimatedDelivery: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days
-      rawResponse: { mock: true, provider: 'shiprocket' }
-    };
-  }
-
-  async getTracking(trackingNumber) {
-    // TODO: Implement actual tracking API
-    return {
-      status: 'IN_TRANSIT',
-      currentLocation: 'Mumbai Hub',
-      events: [
-        { timestamp: new Date().toISOString(), status: 'SHIPPED', location: 'Origin' },
-        { timestamp: new Date().toISOString(), status: 'IN_TRANSIT', location: 'Mumbai Hub' }
-      ],
-      deliveredAt: null
-    };
-  }
-}
-
-/**
- * Delhivery Provider
- */
-class DelhiveryProvider {
-  async createShipment({ order, orderItems, address }) {
-    const trackingNumber = `DL${Date.now()}${Math.floor(Math.random() * 1000)}`;
-    
-    return {
-      courierName: 'Delhivery',
-      trackingNumber,
-      awbNumber: trackingNumber,
-      estimatedDelivery: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
-      rawResponse: { mock: true, provider: 'delhivery' }
-    };
-  }
-
-  async getTracking(trackingNumber) {
-    return {
-      status: 'IN_TRANSIT',
-      currentLocation: 'Delhi Hub',
-      events: [
-        { timestamp: new Date().toISOString(), status: 'SHIPPED', location: 'Origin' },
-        { timestamp: new Date().toISOString(), status: 'IN_TRANSIT', location: 'Delhi Hub' }
-      ],
-      deliveredAt: null
-    };
-  }
-}
-
-/**
- * Blue Dart Provider
- */
-class BlueDartProvider {
-  async createShipment({ order, orderItems, address }) {
-    const trackingNumber = `BD${Date.now()}${Math.floor(Math.random() * 1000)}`;
-    
-    return {
-      courierName: 'Blue Dart',
-      trackingNumber,
-      awbNumber: trackingNumber,
-      estimatedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-      rawResponse: { mock: true, provider: 'bluedart' }
-    };
-  }
-
-  async getTracking(trackingNumber) {
-    return {
-      status: 'IN_TRANSIT',
-      currentLocation: 'Bangalore Hub',
-      events: [
-        { timestamp: new Date().toISOString(), status: 'SHIPPED', location: 'Origin' },
-        { timestamp: new Date().toISOString(), status: 'IN_TRANSIT', location: 'Bangalore Hub' }
-      ],
-      deliveredAt: null
-    };
-  }
-}
-
-/**
- * Manual Provider (for manual shipping)
- */
-class ManualProvider {
-  async createShipment({ order, orderItems, address }) {
-    // Manual provider - admin enters tracking details
-    return {
-      courierName: 'Manual',
-      trackingNumber: `MANUAL-${order.order_number}`,
-      awbNumber: null,
-      estimatedDelivery: null,
-      rawResponse: { manual: true }
-    };
-  }
-
-  async getTracking(trackingNumber) {
-    // Manual tracking - status updated by admin
-    return {
-      status: 'SHIPPED',
-      currentLocation: 'Manual Entry',
-      events: [],
-      deliveredAt: null
-    };
   }
 }
 

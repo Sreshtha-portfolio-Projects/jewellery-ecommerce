@@ -2,11 +2,14 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const supabase = require('../config/supabase');
 
-// Initialize Razorpay
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// Initialize Razorpay (only if credentials are available)
+let razorpay = null;
+if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
+  razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+  });
+}
 
 /**
  * Create Razorpay order and internal order
@@ -176,6 +179,14 @@ const createOrder = async (req, res) => {
     }
 
     // Step 8: Create Razorpay order
+    if (!razorpay) {
+      // Rollback internal order
+      await supabase.from('orders').delete().eq('id', order.id);
+      return res.status(500).json({ 
+        message: 'Payment gateway not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET environment variables.' 
+      });
+    }
+
     const razorpayOrderOptions = {
       amount: Math.round(totalAmount * 100), // Convert to paise
       currency: 'INR',
