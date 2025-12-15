@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
@@ -17,6 +19,10 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const productPairingRoutes = require('./routes/productPairingRoutes');
 const adminProductRoutes = require('./routes/adminProductRoutes');
 const adminPricingRoutes = require('./routes/adminPricingRoutes');
+const orderIntentRoutes = require('./routes/orderIntentRoutes');
+const adminSettingsRoutes = require('./routes/adminSettingsRoutes');
+const adminInventoryRoutes = require('./routes/adminInventoryRoutes');
+const { cartActivityRouter, adminAbandonedCartRouter } = require('./routes/abandonedCartRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,6 +50,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// Swagger API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Aldorado Jewells API Documentation'
+}));
+
 // API Routes
 app.use('/api/auth/admin', authRoutes); // Admin login
 app.use('/api/auth', customerAuthRoutes); // Customer auth (unified)
@@ -61,6 +73,11 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/product-pairings', productPairingRoutes);
 app.use('/api/admin/products', adminProductRoutes);
 app.use('/api/admin/pricing-rules', adminPricingRoutes);
+app.use('/api/admin/settings', adminSettingsRoutes);
+app.use('/api/admin/inventory', adminInventoryRoutes);
+app.use('/api/admin', adminAbandonedCartRouter);
+app.use('/api/order-intents', orderIntentRoutes);
+app.use('/api', cartActivityRouter);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -68,6 +85,7 @@ app.get('/', (req, res) => {
     status: 'ok', 
     message: 'Aldorado Jewells API Server',
     version: '1.0.0',
+    documentation: '/api-docs',
     endpoints: {
       health: '/health',
       debug: '/api/debug/routes',
@@ -98,7 +116,37 @@ app.get('/', (req, res) => {
   });
 });
 
-// Health check endpoint (public)
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Health check endpoint
+ *     tags: [General]
+ *     responses:
+ *       200:
+ *         description: Server is running
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: ok
+ *                 message:
+ *                   type: string
+ *                   example: Server is running
+ */
+/**
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Health check endpoint
+ *     tags: [General]
+ *     responses:
+ *       200:
+ *         description: Server is running
+ */
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
 });

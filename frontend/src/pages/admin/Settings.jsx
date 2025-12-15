@@ -1,141 +1,170 @@
+import { useState, useEffect } from 'react';
+import { adminService } from '../../services/adminService';
+
 const Settings = () => {
+  const [settings, setSettings] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState(null);
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      setLoading(true);
+      const response = await adminService.getSettings();
+      setSettings(response.settings || {});
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      setMessage({ type: 'error', text: 'Failed to load settings' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async (category, key, value) => {
+    try {
+      setSaving(true);
+      await adminService.updateSetting(key, value);
+      setMessage({ type: 'success', text: 'Setting updated successfully' });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error) {
+      console.error('Error updating setting:', error);
+      setMessage({ type: 'error', text: 'Failed to update setting' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleBulkSave = async (categorySettings) => {
+    try {
+      setSaving(true);
+      const settingsObj = {};
+      Object.keys(categorySettings).forEach(key => {
+        settingsObj[key] = categorySettings[key].value;
+      });
+      await adminService.bulkUpdateSettings({ settings: settingsObj });
+      setMessage({ type: 'success', text: 'Settings updated successfully' });
+      setTimeout(() => setMessage(null), 3000);
+      loadSettings();
+    } catch (error) {
+      console.error('Error updating settings:', error);
+      setMessage({ type: 'error', text: 'Failed to update settings' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const SettingInput = ({ category, key, setting }) => {
+    const [value, setValue] = useState(setting.value);
+
+    useEffect(() => {
+      setValue(setting.value);
+    }, [setting.value]);
+
+    const handleChange = (e) => {
+      const newValue = setting.type === 'boolean' 
+        ? e.target.checked 
+        : setting.type === 'number'
+        ? parseFloat(e.target.value) || 0
+        : e.target.value;
+      setValue(newValue);
+    };
+
+    const handleSaveClick = () => {
+      handleSave(category, key, value);
+    };
+
+    return (
+      <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200">
+        <div className="flex-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+          </label>
+          {setting.description && (
+            <p className="text-xs text-gray-500 mb-2">{setting.description}</p>
+          )}
+          {setting.type === 'boolean' ? (
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={value}
+                onChange={handleChange}
+                className="w-4 h-4 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+              />
+              <span className="text-sm text-gray-700">{value ? 'Enabled' : 'Disabled'}</span>
+            </label>
+          ) : setting.type === 'number' ? (
+            <input
+              type="number"
+              value={value}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+            />
+          ) : (
+            <input
+              type="text"
+              value={value}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-yellow-500 focus:border-yellow-500"
+            />
+          )}
+        </div>
+        <button
+          onClick={handleSaveClick}
+          disabled={saving || value === setting.value}
+          className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Save
+        </button>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="p-8">
+        <div className="text-center">Loading settings...</div>
+      </div>
+    );
+  }
+
+  const categories = ['pricing', 'tax', 'shipping', 'inventory', 'checkout'];
+
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="font-serif text-3xl font-bold text-gray-900 mb-8">Settings</h1>
+    <div className="p-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Settings</h1>
+        <p className="text-gray-600">Configure system-wide settings</p>
+      </div>
 
-        <div className="bg-white rounded-lg shadow-sm p-8 space-y-8">
-          {/* Store Information */}
-          <section>
-            <h2 className="font-serif text-xl font-semibold text-gray-900 mb-4">Store Information</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Store Name
-                </label>
-                <input
-                  type="text"
-                  defaultValue="Aldorado Jewells"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-                  disabled
-                />
-                <p className="text-xs text-gray-500 mt-1">Store name is set globally</p>
-              </div>
-            </div>
-          </section>
+      {message && (
+        <div className={`mb-4 p-4 rounded-md ${
+          message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+        }`}>
+          {message.text}
+        </div>
+      )}
 
-          {/* Currency & Tax */}
-          <section>
-            <h2 className="font-serif text-xl font-semibold text-gray-900 mb-4">Currency & Tax</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Currency
-                </label>
-                <select
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-                  disabled
-                >
-                  <option>INR (₹)</option>
-                </select>
-                <p className="text-xs text-gray-500 mt-1">Currency is set to INR</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tax Percentage (GST)
-                </label>
-                <input
-                  type="number"
-                  defaultValue="18"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-                  disabled
-                />
-                <p className="text-xs text-gray-500 mt-1">Currently set to 18% GST</p>
-              </div>
-            </div>
-          </section>
-
-          {/* Support & Contact */}
-          <section>
-            <h2 className="font-serif text-xl font-semibold text-gray-900 mb-4">Support & Contact</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Support Email
-                </label>
-                <input
-                  type="email"
-                  defaultValue="info@aldoradojewells.com"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-                  disabled
-                />
-                <p className="text-xs text-gray-500 mt-1">Customer support email address</p>
-              </div>
-            </div>
-          </section>
-
-          {/* Shipping Rules */}
-          <section>
-            <h2 className="font-serif text-xl font-semibold text-gray-900 mb-4">Shipping Rules</h2>
-            <div className="space-y-4">
-              <div className="p-4 bg-beige-50 border border-beige-200 rounded-lg">
-                <p className="text-sm text-gray-700">
-                  <strong>Current Rule:</strong> Free shipping on all orders
-                </p>
-                <p className="text-xs text-gray-500 mt-2">
-                  Advanced shipping rules (weight-based, location-based) coming soon
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Payment Gateway */}
-          <section>
-            <h2 className="font-serif text-xl font-semibold text-gray-900 mb-4">Payment Gateway</h2>
-            <div className="space-y-4">
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-gray-900">Payments Coming Soon</p>
-                    <p className="text-sm text-gray-600">Payment integration will be added in a future update</p>
-                  </div>
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
-                    Planned
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Orders are currently created as enquiries. Payment processing will be enabled soon.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Coming Soon Features */}
-          <section>
-            <h2 className="font-serif text-xl font-semibold text-gray-900 mb-4">Coming Soon</h2>
-            <div className="space-y-2 text-gray-600">
-              <p>• Advanced shipping rules (weight, location-based)</p>
-              <p>• Multiple payment gateways</p>
-              <p>• Email notification settings</p>
-              <p>• SMS notification settings</p>
-              <p>• Store hours and holidays</p>
-              <p>• Return policy configuration</p>
-            </div>
-          </section>
-
-          <div className="pt-6 border-t border-gray-200">
-            <button
-              disabled
-              className="px-6 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed"
-            >
-              Save Changes (Coming Soon)
-            </button>
-            <p className="text-xs text-gray-500 mt-2">
-              Settings are currently managed via environment variables and database. UI configuration coming soon.
-            </p>
+      {categories.map(category => (
+        <div key={category} className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4 capitalize">
+            {category} Settings
+          </h2>
+          <div className="space-y-4">
+            {settings[category] && Object.keys(settings[category]).map(key => (
+              <SettingInput
+                key={key}
+                category={category}
+                key={key}
+                setting={settings[category][key]}
+              />
+            ))}
           </div>
         </div>
-      </div>
+      ))}
     </div>
   );
 };

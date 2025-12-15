@@ -145,4 +145,53 @@ export const adminService = {
     const response = await api.delete(`/admin/pricing-rules/${id}`);
     return response.data;
   },
+
+  // Admin Settings
+  getSettings: async (category) => {
+    const params = category ? { category } : {};
+    const response = await api.get('/admin/settings', { params });
+    return response.data;
+  },
+
+  updateSetting: async (key, value) => {
+    const response = await api.put(`/admin/settings/${key}`, { value });
+    return response.data;
+  },
+
+  bulkUpdateSettings: async (settings) => {
+    const response = await api.put('/admin/settings/bulk', { settings });
+    return response.data;
+  },
+
+  // Inventory Management
+  getInventoryLocks: async (status, variantId) => {
+    const params = {};
+    if (status) params.status = status;
+    if (variantId) params.variant_id = variantId;
+    const response = await api.get('/admin/inventory/locks', { params });
+    return response.data;
+  },
+
+  getInventorySummary: async () => {
+    const response = await api.get('/admin/inventory/summary');
+    return response.data;
+  },
+
+  releaseInventoryLock: async (lockId) => {
+    const response = await api.post(`/admin/inventory/locks/${lockId}/release`);
+    return response.data;
+  },
+
+  // Abandoned Carts
+  getAbandonedCarts: async (status, limit = 50) => {
+    const params = { limit };
+    if (status) params.status = status;
+    const response = await api.get('/admin/abandoned-carts', { params });
+    return response.data;
+  },
+
+  getAbandonedCartStats: async () => {
+    const response = await api.get('/admin/abandoned-carts/stats');
+    return response.data;
+  },
 };
