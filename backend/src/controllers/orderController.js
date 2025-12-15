@@ -2,6 +2,7 @@ const supabase = require('../config/supabase');
 
 // Valid order state transitions
 const VALID_TRANSITIONS = {
+  CREATED: ['paid', 'cancelled', 'shipped'], // CREATED orders can be paid, cancelled, or directly shipped
   pending: ['paid', 'cancelled'],
   paid: ['shipped', 'cancelled'],
   shipped: ['delivered', 'returned'],
@@ -18,7 +19,7 @@ const validateTransition = (fromStatus, toStatus) => {
 const createOrder = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { shippingAddressId, billingAddressId, discountCode, paymentMethod } = req.body;
+    const { shippingAddressId, billingAddressId, discountCode } = req.body;
 
     // Get user's cart
     const { data: cartItems, error: cartError } = await supabase
@@ -113,15 +114,21 @@ const createOrder = async (req, res) => {
       }
     }
 
-    // Calculate totals
+    // Calculate totals (BACKEND ONLY)
     const shippingCost = 0; // Free shipping for now
-    const totalAmount = subtotal - discountAmount + shippingCost;
+    const taxAmount = (subtotal - discountAmount) * 0.18; // 18% GST
+    const totalAmount = subtotal - discountAmount + shippingCost + taxAmount;
+    
+    // Ensure total is never negative
+    if (totalAmount < 0) {
+      return res.status(400).json({ message: 'Invalid order total' });
+    }
 
     // Generate order number
     const { data: orderNumberData } = await supabase.rpc('generate_order_number');
     const orderNumber = orderNumberData || `ORD-${Date.now()}`;
 
-    // Create order
+    // Create order (pre-payment state: CREATED status, NOT_APPLICABLE payment_status)
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -129,14 +136,15 @@ const createOrder = async (req, res) => {
         user_id: userId,
         shipping_address_id: shippingAddressId,
         billing_address_id: billingAddressId || shippingAddressId,
-        status: 'pending',
+        status: 'CREATED',
         subtotal,
         discount_amount: discountAmount,
         shipping_cost: shippingCost,
+        tax_amount: (subtotal - discountAmount) * 0.18, // 18% GST
         total_amount: totalAmount,
         discount_code: finalDiscountCode,
-        payment_method: paymentMethod || 'pending',
-        payment_status: 'pending'
+        payment_status: 'NOT_APPLICABLE',
+        is_online_order: true
       })
       .select()
       .single();
@@ -178,8 +186,19 @@ const createOrder = async (req, res) => {
     // Clear cart
     await supabase.from('carts').delete().eq('user_id', userId);
 
-    // Note: Stock will be deducted when order status changes to 'paid'
-    // This prevents overselling if payment fails
+    // Log audit
+    await supabase.from('audit_logs').insert({
+      user_id: userId,
+      action: 'order_created',
+      entity_type: 'order',
+      entity_id: order.id,
+      new_values: { status: 'CREATED', payment_status: 'NOT_APPLICABLE' },
+      ip_address: req.ip,
+      user_agent: req.get('user-agent')
+    });
+
+    // Note: Stock deduction and payment processing will be handled when payment integration is added
+    // Orders are now created as intent/enquiry/pre-order
 
     res.status(201).json(order);
   } catch (error) {

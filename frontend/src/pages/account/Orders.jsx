@@ -40,6 +40,7 @@ const Orders = () => {
 
   const getStatusColor = (status) => {
     const colors = {
+      CREATED: 'bg-blue-100 text-blue-800',
       pending: 'bg-yellow-100 text-yellow-800',
       paid: 'bg-blue-100 text-blue-800',
       shipped: 'bg-purple-100 text-purple-800',

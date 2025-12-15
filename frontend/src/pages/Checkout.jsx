@@ -4,7 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { addressService } from '../services/addressService';
 import { discountService } from '../services/discountService';
-import { paymentService } from '../services/paymentService';
+import { orderService } from '../services/orderService';
 
 const Checkout = () => {
   const { cartItems, cartCount, refreshCart } = useCart();
@@ -13,7 +13,6 @@ const Checkout = () => {
 
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('razorpay');
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState('');
@@ -116,16 +115,6 @@ const Checkout = () => {
     setCouponError('');
   };
 
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve();
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
       alert('Please select a delivery address');
@@ -135,54 +124,18 @@ const Checkout = () => {
     setProcessing(true);
 
     try {
-      // Load Razorpay script
-      await loadRazorpayScript();
-      if (!window.Razorpay) {
-        throw new Error('Payment gateway failed to load');
-      }
-
-      // Create order via backend
+      // Create order via backend (no payment processing)
       const orderData = {
         shippingAddressId: selectedAddressId,
         billingAddressId: selectedAddressId,
-        discountCode: appliedCoupon?.code || null,
-        paymentMethod: paymentMethod
+        discountCode: appliedCoupon?.code || null
       };
 
-      const response = await paymentService.createOrder(orderData);
-      const { order, razorpay } = response;
+      const order = await orderService.createOrder(orderData);
 
-      // Open Razorpay checkout
-      const options = {
-        key: razorpay.key,
-        amount: razorpay.amount,
-        currency: razorpay.currency,
-        order_id: razorpay.orderId,
-        name: 'Aldorado Jewells',
-        description: `Order ${order.order_number}`,
-        prefill: {
-          name: 'Customer',
-          email: 'customer@example.com',
-          contact: '9999999999'
-        },
-        theme: {
-          color: '#e11d48' // rose-600
-        },
-        handler: async (paymentResponse) => {
-          // Payment successful - webhook will handle order update
-          navigate(`/orders/${order.id}?payment=success`);
-          await refreshCart();
-        },
-        modal: {
-          ondismiss: () => {
-            // User closed payment modal
-            navigate(`/orders/${order.id}?payment=pending`);
-          }
-        }
-      };
-
-      const razorpayInstance = new window.Razorpay(options);
-      razorpayInstance.open();
+      // Navigate to orders page
+      navigate('/account/orders');
+      await refreshCart();
     } catch (error) {
       console.error('Error placing order:', error);
       alert(error.response?.data?.message || 'Failed to place order. Please try again.');
@@ -277,40 +230,14 @@ const Checkout = () => {
               )}
             </div>
 
-            {/* Payment Method */}
+            {/* Payment Notice */}
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="font-serif text-xl font-semibold text-gray-900 mb-4">Payment Method</h2>
+              <h2 className="font-serif text-xl font-semibold text-gray-900 mb-4">Payment</h2>
               
-              <div className="space-y-3">
-                <label className="flex items-center p-4 border-2 border-rose-600 bg-rose-50 rounded-lg cursor-pointer">
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="razorpay"
-                    checked={paymentMethod === 'razorpay'}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="mr-3"
-                  />
-                  <div>
-                    <p className="font-semibold text-gray-900">Online Payment</p>
-                    <p className="text-sm text-gray-600">Credit/Debit Card, UPI, Net Banking</p>
-                  </div>
-                </label>
-                
-                <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-gray-300">
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="emi"
-                    checked={paymentMethod === 'emi'}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="mr-3"
-                  />
-                  <div>
-                    <p className="font-semibold text-gray-900">EMI</p>
-                    <p className="text-sm text-gray-600">Easy monthly installments</p>
-                  </div>
-                </label>
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-gray-700">
+                  <strong>Payment processing coming soon.</strong> Your order will be created as an enquiry, and our team will contact you to confirm payment details.
+                </p>
               </div>
             </div>
 
@@ -446,7 +373,7 @@ const Checkout = () => {
                 disabled={processing || !selectedAddressId}
                 className="w-full py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {processing ? 'Processing...' : 'Place Order'}
+                {processing ? 'Processing...' : 'Submit Order'}
               </button>
 
               <p className="text-xs text-gray-500 text-center mt-4">

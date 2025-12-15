@@ -10,7 +10,6 @@ const cartRoutes = require('./routes/cartRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const discountRoutes = require('./routes/discountRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
 const shipmentRoutes = require('./routes/shipmentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
@@ -38,7 +37,6 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/discounts', discountRoutes);
-app.use('/api/payments', paymentRoutes);
 app.use('/api/shipments', shipmentRoutes);
 app.use('/api/admin', adminRoutes);
 
@@ -73,7 +71,6 @@ app.get('/', (req, res) => {
       wishlist: '/api/wishlist',
       orders: '/api/orders',
       discounts: '/api/discounts',
-      payments: '/api/payments',
       admin: '/api/admin'
     }
   });

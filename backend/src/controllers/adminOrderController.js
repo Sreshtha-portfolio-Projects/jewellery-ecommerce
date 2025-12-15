@@ -13,8 +13,6 @@ const getAllOrders = async (req, res) => {
         created_at,
         status,
         total_amount,
-        payment_method,
-        payment_status,
         user_id
       `, { count: 'exact' })
       .order('created_at', { ascending: false })

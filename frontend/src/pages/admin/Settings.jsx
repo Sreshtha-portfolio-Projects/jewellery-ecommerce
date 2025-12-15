@@ -93,18 +93,18 @@ const Settings = () => {
           <section>
             <h2 className="font-serif text-xl font-semibold text-gray-900 mb-4">Payment Gateway</h2>
             <div className="space-y-4">
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-semibold text-gray-900">Razorpay</p>
-                    <p className="text-sm text-gray-600">Online Payment & EMI</p>
+                    <p className="font-semibold text-gray-900">Payments Coming Soon</p>
+                    <p className="text-sm text-gray-600">Payment integration will be added in a future update</p>
                   </div>
-                  <span className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full font-medium">
-                    Active
+                  <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs rounded-full font-medium">
+                    Planned
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">
-                  Configured via environment variables (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)
+                  Orders are currently created as enquiries. Payment processing will be enabled soon.
                 </p>
               </div>
             </div>

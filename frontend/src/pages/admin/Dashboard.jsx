@@ -11,7 +11,6 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [paymentFilter, setPaymentFilter] = useState('all');
 
   useEffect(() => {
     fetchDashboardData();
@@ -133,10 +132,10 @@ const Dashboard = () => {
           />
           <KPICard
             title="Total Revenue"
-            value={formatCurrency(kpis?.totalRevenue || 0)}
+            value="Coming Soon"
             icon="💰"
             color="green"
-            trend={kpis?.revenueGrowth ? `+${kpis.revenueGrowth}%` : null}
+            description="Payment integration will enable revenue tracking"
           />
           <KPICard
             title="Conversion Rate"
@@ -164,8 +163,6 @@ const Dashboard = () => {
               setSearchTerm={setSearchTerm}
               statusFilter={statusFilter}
               setStatusFilter={setStatusFilter}
-              paymentFilter={paymentFilter}
-              setPaymentFilter={setPaymentFilter}
               formatCurrency={formatCurrency}
               formatDate={formatDate}
               getStatusColor={getStatusColor}
@@ -236,8 +233,6 @@ const OrderManagement = ({
   setSearchTerm,
   statusFilter,
   setStatusFilter,
-  paymentFilter,
-  setPaymentFilter,
   formatCurrency,
   formatDate,
   getStatusColor,
@@ -247,8 +242,7 @@ const OrderManagement = ({
       order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    const matchesPayment = paymentFilter === 'all' || order.payment_method === paymentFilter;
-    return matchesSearch && matchesStatus && matchesPayment;
+    return matchesSearch && matchesStatus;
   });
 
   return (
@@ -283,16 +277,6 @@ const OrderManagement = ({
           <option value="delivered">Delivered</option>
           <option value="returned">Returned</option>
         </select>
-        <select
-          value={paymentFilter}
-          onChange={(e) => setPaymentFilter(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-        >
-          <option value="all">All Payment Methods</option>
-          <option value="card">Card</option>
-          <option value="upi">UPI</option>
-          <option value="netbanking">Net Banking</option>
-        </select>
         <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2">
           <span>🔍</span>
           <span>More Filters</span>
@@ -309,7 +293,6 @@ const OrderManagement = ({
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order Value</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
@@ -317,7 +300,7 @@ const OrderManagement = ({
           <tbody className="divide-y divide-gray-200">
             {filteredOrders.length === 0 ? (
               <tr>
-                <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
+                <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
                   No orders found
                 </td>
               </tr>
@@ -338,9 +321,6 @@ const OrderManagement = ({
                   </td>
                   <td className="px-4 py-3 text-sm font-semibold text-gray-900">
                     {formatCurrency(order.total_amount || 0)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    {order.payment_method || 'N/A'}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -480,9 +460,9 @@ const OnlineVsOfflineSales = ({ kpis }) => {
     <div className="bg-white rounded-lg shadow-sm p-6">
       <h3 className="font-semibold text-gray-900 mb-6">Online vs Offline Sales</h3>
       <div className="space-y-2">
-        {months.map((month, index) => (
+        {days.map((day, index) => (
           <div key={month} className="flex items-center gap-2">
-            <div className="w-12 text-xs text-gray-600">{month}</div>
+            <div className="w-12 text-xs text-gray-600">{day}</div>
             <div className="flex-1 flex gap-1">
               <div
                 className="bg-blue-500 rounded"

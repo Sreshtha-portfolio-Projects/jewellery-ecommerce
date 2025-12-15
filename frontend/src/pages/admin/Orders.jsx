@@ -6,7 +6,6 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [paymentFilter, setPaymentFilter] = useState('all');
 
   useEffect(() => {
     fetchOrders();
@@ -58,8 +57,7 @@ const Orders = () => {
       order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    const matchesPayment = paymentFilter === 'all' || order.payment_method === paymentFilter;
-    return matchesSearch && matchesStatus && matchesPayment;
+    return matchesSearch && matchesStatus;
   });
 
   if (loading) {
@@ -103,16 +101,6 @@ const Orders = () => {
               <option value="delivered">Delivered</option>
               <option value="returned">Returned</option>
             </select>
-            <select
-              value={paymentFilter}
-              onChange={(e) => setPaymentFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-            >
-              <option value="all">All Payment Methods</option>
-              <option value="card">Card</option>
-              <option value="upi">UPI</option>
-              <option value="netbanking">Net Banking</option>
-            </select>
             <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2">
               <span>🔍</span>
               <span>More Filters</span>
@@ -129,7 +117,6 @@ const Orders = () => {
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order Value</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
@@ -137,7 +124,7 @@ const Orders = () => {
               <tbody className="divide-y divide-gray-200">
                 {filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
                       No orders found
                     </td>
                   </tr>
@@ -158,9 +145,6 @@ const Orders = () => {
                       </td>
                       <td className="px-4 py-3 text-sm font-semibold text-gray-900">
                         {formatCurrency(order.total_amount || 0)}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">
-                        {order.payment_method || 'N/A'}
                       </td>
                       <td className="px-4 py-3">
                         <span
