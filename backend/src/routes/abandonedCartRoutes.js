@@ -12,23 +12,12 @@ const {
  * /api/cart/activity:
  *   post:
  *     summary: Track cart activity
- *     description: Tracks user cart activity for abandoned cart detection. Updates or creates an abandoned cart record with current cart value and item count.
  *     tags: [Cart]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Activity tracked successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 tracked:
- *                   type: boolean
- *                 message:
- *                   type: string
- *                   description: Present if cart is empty
+ *         description: Activity tracked
  */
 router.post('/cart/activity', authenticateToken, trackCartActivity);
 
@@ -42,8 +31,7 @@ adminRouter.use(requireAdmin);
  * /api/admin/abandoned-carts:
  *   get:
  *     summary: Get abandoned carts
- *     description: Retrieves abandoned cart records, optionally filtered by status. Used for cart recovery campaigns.
- *     tags: [Abandoned Carts]
+ *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -51,28 +39,14 @@ adminRouter.use(requireAdmin);
  *         name: status
  *         schema:
  *           type: string
- *           enum: [ACTIVE, ABANDONED, RECOVERED, EXPIRED]
- *         description: Filter by cart status
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
  *           default: 50
- *           minimum: 1
- *           maximum: 100
- *         description: Maximum number of records to return
  *     responses:
  *       200:
- *         description: List of abandoned carts
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 abandoned_carts:
- *                   type: array
- *                   items:
- *                     $ref: '#/components/schemas/AbandonedCart'
+ *         description: Abandoned carts
  */
 adminRouter.get('/abandoned-carts', getAbandonedCarts);
 
@@ -81,17 +55,12 @@ adminRouter.get('/abandoned-carts', getAbandonedCarts);
  * /api/admin/abandoned-carts/stats:
  *   get:
  *     summary: Get abandoned cart statistics
- *     description: Provides statistics about abandoned carts including total abandoned, abandonment rate, and cart values. Used for admin dashboard analytics.
- *     tags: [Abandoned Carts]
+ *     tags: [Admin]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Abandoned cart statistics
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/AbandonedCartStats'
+ *         description: Abandoned cart stats
  */
 adminRouter.get('/abandoned-carts/stats', getAbandonedCartStats);
 

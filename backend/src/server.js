@@ -125,27 +125,6 @@ app.get('/', (req, res) => {
  *     responses:
  *       200:
  *         description: Server is running
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: ok
- *                 message:
- *                   type: string
- *                   example: Server is running
- */
-/**
- * @swagger
- * /health:
- *   get:
- *     summary: Health check endpoint
- *     tags: [General]
- *     responses:
- *       200:
- *         description: Server is running
  */
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });
