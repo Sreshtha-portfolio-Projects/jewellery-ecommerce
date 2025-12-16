@@ -48,9 +48,33 @@ const createOrder = async (req, res) => {
         return res.status(400).json({ message: `Product ${item.product_id} not found` });
       }
 
-      if (item.products.stock_quantity < item.quantity) {
+      // Check if product has variants
+      let availableStock = item.products.stock_quantity;
+      
+      try {
+        const { data: variants, error: variantError } = await supabase
+          .from('product_variants')
+          .select('stock_quantity, is_active')
+          .eq('product_id', item.product_id)
+          .eq('is_active', true);
+
+        if (variantError) {
+          console.error('Error checking variants:', variantError);
+          // Continue with product stock if variant check fails
+        } else if (variants && variants.length > 0) {
+          // Product has variants - use total available variant stock
+          // Note: Since carts table doesn't have variant_id, we can't check specific variant
+          // So we use the sum of all active variant stock as a conservative estimate
+          availableStock = variants.reduce((sum, v) => sum + (v.stock_quantity || 0), 0);
+        }
+      } catch (error) {
+        console.error('Error checking variants for product:', item.product_id, error);
+        // Continue with product stock if variant check fails
+      }
+
+      if (availableStock < item.quantity) {
         return res.status(400).json({ 
-          message: `Insufficient stock for ${item.products.name}. Only ${item.products.stock_quantity} available.` 
+          message: `Insufficient stock for ${item.products.name}. Only ${availableStock} available.` 
         });
       }
 
@@ -125,10 +149,25 @@ const createOrder = async (req, res) => {
     }
 
     // Generate order number
-    const { data: orderNumberData } = await supabase.rpc('generate_order_number');
-    const orderNumber = orderNumberData || `ORD-${Date.now()}`;
+    let orderNumber = `ORD-${Date.now()}`;
+    try {
+      const { data: orderNumberData, error: rpcError } = await supabase.rpc('generate_order_number');
+      if (!rpcError && orderNumberData) {
+        // RPC might return the value directly or in an array
+        orderNumber = Array.isArray(orderNumberData) ? orderNumberData[0] : orderNumberData;
+        // Ensure it's a string
+        if (orderNumber) {
+          orderNumber = String(orderNumber);
+        } else {
+          orderNumber = `ORD-${Date.now()}`;
+        }
+      }
+    } catch (error) {
+      console.error('Error generating order number via RPC:', error);
+      // Use fallback order number
+    }
 
-    // Create order (pre-payment state: CREATED status, NOT_APPLICABLE payment_status)
+    // Create order (pre-payment state: pending status, pending payment_status)
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -136,14 +175,14 @@ const createOrder = async (req, res) => {
         user_id: userId,
         shipping_address_id: shippingAddressId,
         billing_address_id: billingAddressId || shippingAddressId,
-        status: 'CREATED',
+        status: 'pending', // Valid status per database constraint
         subtotal,
         discount_amount: discountAmount,
         shipping_cost: shippingCost,
         tax_amount: (subtotal - discountAmount) * 0.18, // 18% GST
         total_amount: totalAmount,
         discount_code: finalDiscountCode,
-        payment_status: 'NOT_APPLICABLE',
+        payment_status: 'pending', // Use 'pending' instead of 'NOT_APPLICABLE'
         is_online_order: true
       })
       .select()
@@ -151,7 +190,13 @@ const createOrder = async (req, res) => {
 
     if (orderError) {
       console.error('Error creating order:', orderError);
-      return res.status(500).json({ message: 'Error creating order' });
+      const errorMessage = process.env.NODE_ENV === 'production' 
+        ? 'Error creating order' 
+        : orderError.message || 'Error creating order';
+      return res.status(500).json({ 
+        message: errorMessage,
+        details: process.env.NODE_ENV !== 'production' ? orderError : undefined
+      });
     }
 
     // Create order items
@@ -172,7 +217,13 @@ const createOrder = async (req, res) => {
       console.error('Error creating order items:', itemsError);
       // Rollback order
       await supabase.from('orders').delete().eq('id', order.id);
-      return res.status(500).json({ message: 'Error creating order items' });
+      const errorMessage = process.env.NODE_ENV === 'production' 
+        ? 'Error creating order items' 
+        : itemsError.message || 'Error creating order items';
+      return res.status(500).json({ 
+        message: errorMessage,
+        details: process.env.NODE_ENV !== 'production' ? itemsError : undefined
+      });
     }
 
     // Update discount used count
@@ -184,18 +235,27 @@ const createOrder = async (req, res) => {
     }
 
     // Clear cart
-    await supabase.from('carts').delete().eq('user_id', userId);
+    const { error: cartClearError } = await supabase.from('carts').delete().eq('user_id', userId);
+    if (cartClearError) {
+      console.error('Error clearing cart:', cartClearError);
+      // Non-critical, don't fail the order
+    }
 
-    // Log audit
-    await supabase.from('audit_logs').insert({
-      user_id: userId,
-      action: 'order_created',
-      entity_type: 'order',
-      entity_id: order.id,
-      new_values: { status: 'CREATED', payment_status: 'NOT_APPLICABLE' },
-      ip_address: req.ip,
-      user_agent: req.get('user-agent')
-    });
+    // Log audit (non-blocking)
+    try {
+      await supabase.from('audit_logs').insert({
+        user_id: userId,
+        action: 'order_created',
+        entity_type: 'order',
+        entity_id: order.id,
+        new_values: { status: 'pending', payment_status: 'pending' },
+        ip_address: req.ip,
+        user_agent: req.get('user-agent')
+      });
+    } catch (auditError) {
+      console.error('Error logging audit:', auditError);
+      // Non-critical, don't fail the order
+    }
 
     // Note: Stock deduction and payment processing will be handled when payment integration is added
     // Orders are now created as intent/enquiry/pre-order

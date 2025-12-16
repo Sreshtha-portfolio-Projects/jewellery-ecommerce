@@ -22,8 +22,12 @@ const options = {
         description: 'Development server'
       },
       {
-        url: 'https://api.aldoradojewells.com',
-        description: 'Production server'
+        url: 'https://api.valobuy.shop',
+        description: 'Production server (ValoBuy)'
+      },
+      {
+        url: 'https://api.valo.buy.com',
+        description: 'Production server (ValoBuy Alt)'
       }
     ],
     components: {
@@ -182,6 +186,24 @@ const options = {
             created_at: { type: 'string', format: 'date-time' }
           }
         },
+        PaymentOrder: {
+          type: 'object',
+          properties: {
+            razorpay_order_id: { type: 'string' },
+            amount: { type: 'number', description: 'Amount in paise' },
+            currency: { type: 'string', example: 'INR' },
+            key_id: { type: 'string', description: 'Razorpay Key ID for frontend' }
+          }
+        },
+        PaymentVerification: {
+          type: 'object',
+          properties: {
+            verified: { type: 'boolean' },
+            order_id: { type: 'string', format: 'uuid' },
+            order_number: { type: 'string' },
+            message: { type: 'string' }
+          }
+        },
         Error: {
           type: 'object',
           properties: {
@@ -198,6 +220,8 @@ const options = {
       { name: 'Admin Products', description: 'Admin product management endpoints' },
       { name: 'Cart', description: 'Shopping cart operations' },
       { name: 'Orders', description: 'Order management' },
+      { name: 'Order Intents', description: 'Order intent management (pre-payment)' },
+      { name: 'Payments', description: 'Razorpay payment integration endpoints' },
       { name: 'Addresses', description: 'User address management' },
       { name: 'Wishlist', description: 'Wishlist operations' },
       { name: 'Discounts', description: 'Discount/coupon management' },

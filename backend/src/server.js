@@ -22,6 +22,7 @@ const adminPricingRoutes = require('./routes/adminPricingRoutes');
 const orderIntentRoutes = require('./routes/orderIntentRoutes');
 const adminSettingsRoutes = require('./routes/adminSettingsRoutes');
 const adminInventoryRoutes = require('./routes/adminInventoryRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 const { cartActivityRouter, adminAbandonedCartRouter } = require('./routes/abandonedCartRoutes');
 
 const app = express();
@@ -122,6 +123,7 @@ app.use('/api/admin/settings', adminSettingsRoutes);
 app.use('/api/admin/inventory', adminInventoryRoutes);
 app.use('/api/admin', adminAbandonedCartRouter);
 app.use('/api/order-intents', orderIntentRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use('/api', cartActivityRouter);
 
 // Root endpoint

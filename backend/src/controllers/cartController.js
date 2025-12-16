@@ -26,10 +26,30 @@ const getCart = async (req, res) => {
     }
 
     // Filter out products that are out of stock
-    const validCartItems = (data || []).filter(item => {
-      if (!item.products) return false;
-      return item.products.stock_quantity >= item.quantity;
-    });
+    // Note: For products with variants, stock is managed at variant level,
+    // so we don't filter them out based on product stock (which is often 0)
+    const validCartItems = [];
+    for (const item of (data || [])) {
+      if (!item.products) continue;
+
+      // Check if product has variants
+      const { data: variants } = await supabase
+        .from('product_variants')
+        .select('id, stock_quantity, is_active')
+        .eq('product_id', item.product_id)
+        .eq('is_active', true);
+
+      if (variants && variants.length > 0) {
+        // Product has variants - include it (stock is validated when adding to cart)
+        // We can't check specific variant stock without variant_id in cart
+        validCartItems.push(item);
+      } else {
+        // No variants - check product stock
+        if (item.products.stock_quantity >= item.quantity) {
+          validCartItems.push(item);
+        }
+      }
+    }
 
     res.json(validCartItems);
   } catch (error) {
@@ -86,28 +106,23 @@ const addToCart = async (req, res) => {
       stockSource = 'variant';
     }
 
-    // Check existing cart item (consider variant if provided)
-    let existingCartItemQuery = supabase
+    // Check existing cart item
+    // Note: carts table doesn't have variant_id column yet, so we check by product_id only
+    // Multiple variants of the same product will be combined in cart (limitation for now)
+    const { data: existingCartItem } = await supabase
       .from('carts')
       .select('quantity')
       .eq('user_id', userId)
-      .eq('product_id', productId);
-
-    // If variant is provided, also check for variant_id match
-    // Note: This assumes carts table may have variant_id column
-    // If not, we'll check by product_id only but use variant stock
-    if (variantId) {
-      existingCartItemQuery = existingCartItemQuery.eq('variant_id', variantId);
-    } else {
-      // For products without variants, check for items without variant_id
-      existingCartItemQuery = existingCartItemQuery.is('variant_id', null);
-    }
-
-    const { data: existingCartItem } = await existingCartItemQuery.single();
+      .eq('product_id', productId)
+      .maybeSingle();
 
     const currentQuantity = existingCartItem?.quantity || 0;
     const requestedQuantity = currentQuantity + quantity;
 
+    // Stock validation
+    // Note: For variants, we check requestedQuantity (existing + new) assuming the existing
+    // cart item is the same variant. Since carts table doesn't have variant_id column,
+    // we can't verify this, but checking total is better than only checking new quantity.
     if (availableStock < requestedQuantity) {
       return res.status(400).json({ 
         message: `Insufficient stock. Only ${availableStock} available.`,
@@ -115,27 +130,17 @@ const addToCart = async (req, res) => {
       });
     }
 
-    // Prepare cart item data
-    const cartItemData = {
-      user_id: userId,
-      product_id: productId,
-      quantity: requestedQuantity
-    };
-
-    // Add variant_id if provided (assuming carts table supports it)
-    if (variantId) {
-      cartItemData.variant_id = variantId;
-    }
-
-    // Determine conflict resolution key
-    // If variant_id is supported, use composite key; otherwise use product_id only
-    const conflictKey = variantId ? 'user_id,product_id,variant_id' : 'user_id,product_id';
-
     // Upsert cart item
+    // Note: carts table doesn't have variant_id column yet, so variant info is not stored
+    // Multiple variants of the same product will be combined (limitation for now)
     const { data, error } = await supabase
       .from('carts')
-      .upsert(cartItemData, {
-        onConflict: conflictKey
+      .upsert({
+        user_id: userId,
+        product_id: productId,
+        quantity: requestedQuantity
+      }, {
+        onConflict: 'user_id,product_id'
       })
       .select(`
         *,
@@ -151,36 +156,6 @@ const addToCart = async (req, res) => {
 
     if (error) {
       console.error('Error adding to cart:', error);
-      // If variant_id column doesn't exist, try without it
-      if (error.message && error.message.includes('variant_id')) {
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('carts')
-          .upsert({
-            user_id: userId,
-            product_id: productId,
-            quantity: requestedQuantity
-          }, {
-            onConflict: 'user_id,product_id'
-          })
-          .select(`
-            *,
-            products (
-              id,
-              name,
-              price,
-              image_url,
-              stock_quantity
-            )
-          `)
-          .single();
-
-        if (fallbackError) {
-          console.error('Error adding to cart (fallback):', fallbackError);
-          return res.status(500).json({ message: 'Error adding to cart' });
-        }
-
-        return res.json(fallbackData);
-      }
       return res.status(500).json({ message: 'Error adding to cart' });
     }
 
@@ -219,11 +194,27 @@ const updateCartItem = async (req, res) => {
       return res.status(404).json({ message: 'Cart item not found' });
     }
 
+    // Check if product has variants
+    const { data: variants } = await supabase
+      .from('product_variants')
+      .select('stock_quantity, is_active')
+      .eq('product_id', cartItem.product_id)
+      .eq('is_active', true);
+
+    let availableStock = cartItem.products.stock_quantity;
+
+    if (variants && variants.length > 0) {
+      // Product has variants - use total available variant stock
+      // Note: Since carts table doesn't have variant_id, we can't check specific variant
+      // So we use the sum of all active variant stock as a conservative estimate
+      availableStock = variants.reduce((sum, v) => sum + (v.stock_quantity || 0), 0);
+    }
+
     // Check stock availability
-    if (cartItem.products.stock_quantity < quantity) {
+    if (availableStock < quantity) {
       return res.status(400).json({ 
-        message: `Insufficient stock. Only ${cartItem.products.stock_quantity} available.`,
-        availableStock: cartItem.products.stock_quantity
+        message: `Insufficient stock. Only ${availableStock} available.`,
+        availableStock: availableStock
       });
     }
 

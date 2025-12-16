@@ -3,7 +3,8 @@ import api from './api';
 export const cartService = {
   getCart: async () => {
     const response = await api.get('/cart');
-    return response.data.items || [];
+    // Backend returns array directly, not wrapped in { items: [...] }
+    return Array.isArray(response.data) ? response.data : (response.data.items || []);
   },
 
   addToCart: async (productId, quantity = 1, variantId = null) => {

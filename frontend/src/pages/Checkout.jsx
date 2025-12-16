@@ -4,7 +4,8 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { addressService } from '../services/addressService';
 import { discountService } from '../services/discountService';
-import { orderService } from '../services/orderService';
+import { orderIntentService } from '../services/orderIntentService';
+import { paymentService } from '../services/paymentService';
 import { showError, showSuccess } from '../utils/toast';
 
 const Checkout = () => {
@@ -125,22 +126,89 @@ const Checkout = () => {
     setProcessing(true);
 
     try {
-      // Create order via backend (no payment processing)
-      const orderData = {
-        shippingAddressId: selectedAddressId,
-        billingAddressId: selectedAddressId,
-        discountCode: appliedCoupon?.code || null
+      // Step 1: Create order intent (locks inventory and prices)
+      const orderIntentData = await orderIntentService.createOrderIntent(
+        selectedAddressId,
+        selectedAddressId,
+        appliedCoupon?.code || null
+      );
+
+      const orderIntent = orderIntentData.order_intent;
+
+      // Step 2: Create Razorpay payment order
+      const paymentOrder = await paymentService.createPaymentOrder(orderIntent.id);
+
+      // Step 3: Initialize Razorpay Checkout
+      const options = {
+        key: paymentOrder.key_id,
+        amount: paymentOrder.amount,
+        currency: paymentOrder.currency,
+        order_id: paymentOrder.razorpay_order_id,
+        name: 'Aldorado Jewells',
+        description: `Order Intent ${orderIntent.intent_number}`,
+        handler: async function (response) {
+          try {
+            // Step 4: Verify payment and convert intent to order
+            const result = await paymentService.verifyPayment(orderIntent.id, response);
+            
+            showSuccess('Payment successful! Order confirmed.');
+            await refreshCart();
+            
+            // Reset processing state before navigation to ensure UI is responsive
+            setProcessing(false);
+            
+            navigate(`/account/orders`);
+          } catch (error) {
+            console.error('Error verifying payment:', error);
+            showError('Payment verification failed. Please contact support.');
+            
+            // Reset processing state before navigation to ensure UI is responsive
+            setProcessing(false);
+            
+            // Navigate to orders page - order intent will expire and release inventory
+            navigate('/account/orders');
+          }
+        },
+        prefill: {
+          // You can add user email/phone if available from auth context
+        },
+        theme: {
+          color: '#B8860B' // Rose gold color
+        },
+        modal: {
+          ondismiss: function() {
+            showError('Payment cancelled. Order intent will expire and inventory will be released.');
+            setProcessing(false);
+          }
+        }
       };
 
-      const order = await orderService.createOrder(orderData);
+      // Step 5: Open Razorpay Checkout
+      // Check if Razorpay SDK has loaded successfully
+      if (typeof window.Razorpay === 'undefined') {
+        setProcessing(false);
+        showError('Payment gateway failed to load. Please refresh the page and try again. If the problem persists, check your internet connection or disable ad blockers.');
+        console.error('Razorpay SDK not loaded. Check if the script tag in index.html is loading correctly.');
+        return;
+      }
 
-      // Navigate to orders page
-      navigate('/account/orders');
-      await refreshCart();
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+      
+      // Note: Don't set processing to false here
+      // It will be set in the handler or on dismiss
     } catch (error) {
       console.error('Error placing order:', error);
-      showError(error.response?.data?.message || 'Failed to place order. Please try again.');
-    } finally {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to place order. Please try again.';
+      const errorDetails = error.response?.data?.details;
+      
+      // Show detailed error in development
+      if (errorDetails && process.env.NODE_ENV === 'development') {
+        console.error('Order intent creation error details:', errorDetails);
+        showError(`${errorMessage}. Check console for details.`);
+      } else {
+        showError(errorMessage);
+      }
       setProcessing(false);
     }
   };
@@ -231,14 +299,24 @@ const Checkout = () => {
               )}
             </div>
 
-            {/* Payment Notice */}
+            {/* Payment Method */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="font-serif text-xl font-semibold text-gray-900 mb-4">Payment</h2>
               
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-gray-700">
-                  <strong>Payment processing coming soon.</strong> Your order will be created as an enquiry, and our team will contact you to confirm payment details.
-                </p>
+              <div className="space-y-3">
+                <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-gray-300">
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="online"
+                    defaultChecked
+                    className="mr-3"
+                  />
+                  <div>
+                    <p className="font-semibold text-gray-900">Online Payment</p>
+                    <p className="text-sm text-gray-600">Pay securely with Razorpay (Cards, UPI, Net Banking, Wallets)</p>
+                  </div>
+                </label>
               </div>
             </div>
 
@@ -374,7 +452,7 @@ const Checkout = () => {
                 disabled={processing || !selectedAddressId}
                 className="w-full py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {processing ? 'Processing...' : 'Submit Order'}
+                {processing ? 'Processing...' : 'Proceed to Payment'}
               </button>
 
               <p className="text-xs text-gray-500 text-center mt-4">
