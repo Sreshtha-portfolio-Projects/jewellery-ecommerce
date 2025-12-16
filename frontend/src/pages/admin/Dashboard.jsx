@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
 import { discountService } from '../../services/discountService';
+import { showError } from '../../utils/toast';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -20,15 +21,31 @@ const Dashboard = () => {
     try {
       setLoading(true);
       const [kpisData, ordersData, revenueData] = await Promise.all([
-        adminService.getDashboardKPIs().catch(() => null),
-        adminService.getAllOrders().catch(() => ({ orders: [] })),
-        adminService.getRevenueByMetalType().catch(() => null),
+        adminService.getDashboardKPIs().catch((error) => {
+          console.error('Error fetching KPIs:', error);
+          const errorMessage = error.response?.data?.message || error.message || 'Failed to load dashboard KPIs';
+          showError(errorMessage);
+          return null;
+        }),
+        adminService.getAllOrders().catch((error) => {
+          console.error('Error fetching orders:', error);
+          const errorMessage = error.response?.data?.message || error.message || 'Failed to load orders';
+          showError(errorMessage);
+          return { orders: [] };
+        }),
+        adminService.getRevenueByMetalType().catch((error) => {
+          console.error('Error fetching revenue data:', error);
+          // Don't show error for revenue data as it's not critical
+          return null;
+        }),
       ]);
       setKpis(kpisData);
       setOrders(ordersData?.orders || ordersData || []);
       setRevenueByMetal(revenueData);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to load dashboard data';
+      showError(errorMessage);
       // Set empty defaults on error
       setKpis(null);
       setOrders([]);
@@ -515,6 +532,8 @@ const DiscountPromotions = ({ navigate }) => {
       setDiscounts(data || []);
     } catch (error) {
       console.error('Error fetching discounts:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to load discounts';
+      showError(errorMessage);
     } finally {
       setLoading(false);
     }

@@ -164,8 +164,10 @@ const ProductForm = () => {
       formData.append('display_order', images.length);
       formData.append('is_primary', images.length === 0);
 
+      // Normalize API base URL - remove trailing slash if present
+      const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').replace(/\/+$/, '');
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/admin/products/${id}/images/upload`,
+        `${apiBaseUrl}/api/admin/products/${id}/images/upload`,
         {
           method: 'POST',
           headers: {
@@ -312,8 +314,10 @@ const ProductForm = () => {
               formData.append('display_order', imagesToSave.length + i);
               formData.append('is_primary', pendingImage.is_primary || false);
 
+              // Normalize API base URL - remove trailing slash if present
+              const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').replace(/\/+$/, '');
               const response = await fetch(
-                `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/admin/products/${newProductId}/images/upload`,
+                `${apiBaseUrl}/api/admin/products/${newProductId}/images/upload`,
                 {
                   method: 'POST',
                   headers: {

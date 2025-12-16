@@ -22,6 +22,9 @@ const Products = () => {
       setPagination(prev => ({ ...prev, ...data.pagination }));
     } catch (error) {
       console.error('Error fetching products:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to load products';
+      showError(errorMessage);
+      setProducts([]);
     } finally {
       setLoading(false);
     }

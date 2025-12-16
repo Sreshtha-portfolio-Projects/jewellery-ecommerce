@@ -5,6 +5,6 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    allowedHosts: ['app.valobuy.shop']
+    allowedHosts: ['app.valobuy.shop', 'app.valo.buy.com', 'valobuy.shop', 'valo.buy.com']
   }
 })

@@ -128,7 +128,10 @@ const getDashboardKPIs = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching dashboard KPIs:', error);
-    res.status(500).json({ message: 'Error fetching dashboard KPIs' });
+    const errorMessage = process.env.NODE_ENV === 'production' 
+      ? 'Error fetching dashboard KPIs' 
+      : error.message || 'Error fetching dashboard KPIs';
+    res.status(500).json({ message: errorMessage });
   }
 };
 

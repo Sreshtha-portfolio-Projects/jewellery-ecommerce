@@ -41,7 +41,7 @@ const getCart = async (req, res) => {
 const addToCart = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { productId, quantity = 1 } = req.body;
+    const { productId, quantity = 1, variantId = null } = req.body;
 
     if (!productId) {
       return res.status(400).json({ message: 'Product ID is required' });
@@ -51,7 +51,7 @@ const addToCart = async (req, res) => {
       return res.status(400).json({ message: 'Quantity must be at least 1' });
     }
 
-    // Check product exists and has stock
+    // Check product exists
     const { data: product, error: productError } = await supabase
       .from('products')
       .select('*')
@@ -62,33 +62,80 @@ const addToCart = async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    // Check stock availability
-    const { data: existingCartItem } = await supabase
+    // If variant is provided, check variant stock instead of product stock
+    let availableStock = product.stock_quantity;
+    let stockSource = 'product';
+    
+    if (variantId) {
+      const { data: variant, error: variantError } = await supabase
+        .from('product_variants')
+        .select('*')
+        .eq('id', variantId)
+        .eq('product_id', productId)
+        .single();
+
+      if (variantError || !variant) {
+        return res.status(404).json({ message: 'Variant not found' });
+      }
+
+      if (!variant.is_active) {
+        return res.status(400).json({ message: 'Variant is not available' });
+      }
+
+      availableStock = variant.stock_quantity;
+      stockSource = 'variant';
+    }
+
+    // Check existing cart item (consider variant if provided)
+    let existingCartItemQuery = supabase
       .from('carts')
       .select('quantity')
       .eq('user_id', userId)
-      .eq('product_id', productId)
-      .single();
+      .eq('product_id', productId);
+
+    // If variant is provided, also check for variant_id match
+    // Note: This assumes carts table may have variant_id column
+    // If not, we'll check by product_id only but use variant stock
+    if (variantId) {
+      existingCartItemQuery = existingCartItemQuery.eq('variant_id', variantId);
+    } else {
+      // For products without variants, check for items without variant_id
+      existingCartItemQuery = existingCartItemQuery.is('variant_id', null);
+    }
+
+    const { data: existingCartItem } = await existingCartItemQuery.single();
 
     const currentQuantity = existingCartItem?.quantity || 0;
     const requestedQuantity = currentQuantity + quantity;
 
-    if (product.stock_quantity < requestedQuantity) {
+    if (availableStock < requestedQuantity) {
       return res.status(400).json({ 
-        message: `Insufficient stock. Only ${product.stock_quantity} available.`,
-        availableStock: product.stock_quantity
+        message: `Insufficient stock. Only ${availableStock} available.`,
+        availableStock: availableStock
       });
     }
+
+    // Prepare cart item data
+    const cartItemData = {
+      user_id: userId,
+      product_id: productId,
+      quantity: requestedQuantity
+    };
+
+    // Add variant_id if provided (assuming carts table supports it)
+    if (variantId) {
+      cartItemData.variant_id = variantId;
+    }
+
+    // Determine conflict resolution key
+    // If variant_id is supported, use composite key; otherwise use product_id only
+    const conflictKey = variantId ? 'user_id,product_id,variant_id' : 'user_id,product_id';
 
     // Upsert cart item
     const { data, error } = await supabase
       .from('carts')
-      .upsert({
-        user_id: userId,
-        product_id: productId,
-        quantity: requestedQuantity
-      }, {
-        onConflict: 'user_id,product_id'
+      .upsert(cartItemData, {
+        onConflict: conflictKey
       })
       .select(`
         *,
@@ -104,6 +151,36 @@ const addToCart = async (req, res) => {
 
     if (error) {
       console.error('Error adding to cart:', error);
+      // If variant_id column doesn't exist, try without it
+      if (error.message && error.message.includes('variant_id')) {
+        const { data: fallbackData, error: fallbackError } = await supabase
+          .from('carts')
+          .upsert({
+            user_id: userId,
+            product_id: productId,
+            quantity: requestedQuantity
+          }, {
+            onConflict: 'user_id,product_id'
+          })
+          .select(`
+            *,
+            products (
+              id,
+              name,
+              price,
+              image_url,
+              stock_quantity
+            )
+          `)
+          .single();
+
+        if (fallbackError) {
+          console.error('Error adding to cart (fallback):', fallbackError);
+          return res.status(500).json({ message: 'Error adding to cart' });
+        }
+
+        return res.json(fallbackData);
+      }
       return res.status(500).json({ message: 'Error adding to cart' });
     }
 
