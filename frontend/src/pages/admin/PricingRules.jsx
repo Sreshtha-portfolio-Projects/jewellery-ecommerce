@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '../../services/adminService';
+import { showError, showSuccess, showConfirm } from '../../utils/toast';
 
 const PricingRules = () => {
   const [rules, setRules] = useState([]);
@@ -57,21 +58,24 @@ const PricingRules = () => {
         valid_from: '',
         valid_until: ''
       });
+      showSuccess(editingRule ? 'Pricing rule updated successfully' : 'Pricing rule created successfully');
       fetchRules();
     } catch (error) {
       console.error('Error saving pricing rule:', error);
-      alert('Failed to save pricing rule');
+      showError('Failed to save pricing rule');
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this pricing rule?')) return;
+    const confirmed = await showConfirm('Are you sure you want to delete this pricing rule?');
+    if (!confirmed) return;
     try {
       await adminService.deletePricingRule(id);
+      showSuccess('Pricing rule deleted successfully');
       fetchRules();
     } catch (error) {
       console.error('Error deleting pricing rule:', error);
-      alert('Failed to delete pricing rule');
+      showError('Failed to delete pricing rule');
     }
   };
 

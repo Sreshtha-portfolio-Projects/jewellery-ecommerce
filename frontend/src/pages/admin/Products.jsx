@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
+import { showError, showSuccess, showConfirm } from '../../utils/toast';
 
 const Products = () => {
   const navigate = useNavigate();
@@ -21,20 +22,25 @@ const Products = () => {
       setPagination(prev => ({ ...prev, ...data.pagination }));
     } catch (error) {
       console.error('Error fetching products:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to load products';
+      showError(errorMessage);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    const confirmed = await showConfirm('Are you sure you want to delete this product?');
+    if (!confirmed) return;
 
     try {
       await adminService.deleteProduct(id);
+      showSuccess('Product deleted successfully');
       fetchProducts();
     } catch (error) {
       console.error('Error deleting product:', error);
-      alert('Failed to delete product');
+      showError('Failed to delete product');
     }
   };
 

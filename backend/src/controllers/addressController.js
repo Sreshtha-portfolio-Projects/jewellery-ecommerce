@@ -26,11 +26,33 @@ const getAddresses = async (req, res) => {
 const createAddress = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { fullName, phone, addressLine1, addressLine2, city, state, postalCode, country, isDefault, addressType } = req.body;
+    
+    // Support both camelCase (from API docs) and snake_case (from frontend)
+    const fullName = req.body.fullName || req.body.full_name;
+    const phone = req.body.phone || req.body.phone_number; // Support both formats
+    const addressLine1 = req.body.addressLine1 || req.body.address_line1;
+    const addressLine2 = req.body.addressLine2 || req.body.address_line2;
+    const city = req.body.city;
+    const state = req.body.state;
+    const postalCode = req.body.postalCode || req.body.postal_code;
+    const country = req.body.country;
+    const isDefault = req.body.isDefault !== undefined ? req.body.isDefault : req.body.is_default;
+    const addressType = req.body.addressType || req.body.address_type;
 
-    // Validate required fields
-    if (!fullName || !phone || !addressLine1 || !city || !state || !postalCode) {
-      return res.status(400).json({ message: 'Missing required address fields' });
+    // Validate required fields and provide specific error messages
+    const missingFields = [];
+    if (!fullName || (typeof fullName === 'string' && fullName.trim() === '')) missingFields.push('fullName/full_name');
+    if (!phone || (typeof phone === 'string' && phone.trim() === '')) missingFields.push('phone');
+    if (!addressLine1 || (typeof addressLine1 === 'string' && addressLine1.trim() === '')) missingFields.push('addressLine1/address_line1');
+    if (!city || (typeof city === 'string' && city.trim() === '')) missingFields.push('city');
+    if (!state || (typeof state === 'string' && state.trim() === '')) missingFields.push('state');
+    if (!postalCode || (typeof postalCode === 'string' && postalCode.trim() === '')) missingFields.push('postalCode/postal_code');
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({ 
+        message: `Missing required address fields: ${missingFields.join(', ')}`,
+        missingFields: missingFields
+      });
     }
 
     // If setting as default, unset other defaults
@@ -76,7 +98,18 @@ const updateAddress = async (req, res) => {
   try {
     const userId = req.user.userId;
     const { id } = req.params;
-    const { fullName, phone, addressLine1, addressLine2, city, state, postalCode, country, isDefault, addressType } = req.body;
+    
+    // Support both camelCase (from API docs) and snake_case (from frontend)
+    const fullName = req.body.fullName !== undefined ? req.body.fullName : req.body.full_name;
+    const phone = req.body.phone !== undefined ? req.body.phone : req.body.phone_number;
+    const addressLine1 = req.body.addressLine1 !== undefined ? req.body.addressLine1 : req.body.address_line1;
+    const addressLine2 = req.body.addressLine2 !== undefined ? req.body.addressLine2 : req.body.address_line2;
+    const city = req.body.city;
+    const state = req.body.state;
+    const postalCode = req.body.postalCode !== undefined ? req.body.postalCode : req.body.postal_code;
+    const country = req.body.country;
+    const isDefault = req.body.isDefault !== undefined ? req.body.isDefault : req.body.is_default;
+    const addressType = req.body.addressType !== undefined ? req.body.addressType : req.body.address_type;
 
     // Verify address belongs to user
     const { data: existingAddress, error: fetchError } = await supabase
@@ -88,6 +121,11 @@ const updateAddress = async (req, res) => {
 
     if (fetchError || !existingAddress) {
       return res.status(404).json({ message: 'Address not found' });
+    }
+
+    // Validate phone if being updated
+    if (phone !== undefined && (!phone || (typeof phone === 'string' && phone.trim() === ''))) {
+      return res.status(400).json({ message: 'Phone number cannot be empty' });
     }
 
     // If setting as default, unset other defaults

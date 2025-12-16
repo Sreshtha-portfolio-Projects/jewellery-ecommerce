@@ -22,13 +22,59 @@ const adminPricingRoutes = require('./routes/adminPricingRoutes');
 const orderIntentRoutes = require('./routes/orderIntentRoutes');
 const adminSettingsRoutes = require('./routes/adminSettingsRoutes');
 const adminInventoryRoutes = require('./routes/adminInventoryRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 const { cartActivityRouter, adminAbandonedCartRouter } = require('./routes/abandonedCartRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+// CORS configuration - allow requests from frontend domains
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, Postman, or same-origin requests)
+    if (!origin) return callback(null, true);
+    
+    // List of allowed origins
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'https://app.valobuy.shop',
+      'https://app.valo.buy.com',
+      'https://valobuy.shop',
+      'https://valo.buy.com'
+    ];
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      // In development, allow all origins
+      if (process.env.NODE_ENV !== 'production') {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'Cache-Control',
+    'Pragma',
+    'Expires',
+    'Accept',
+    'Accept-Language',
+    'Origin',
+    'Referer',
+    'User-Agent'
+  ]
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -77,6 +123,7 @@ app.use('/api/admin/settings', adminSettingsRoutes);
 app.use('/api/admin/inventory', adminInventoryRoutes);
 app.use('/api/admin', adminAbandonedCartRouter);
 app.use('/api/order-intents', orderIntentRoutes);
+app.use('/api/payments', paymentRoutes);
 app.use('/api', cartActivityRouter);
 
 // Root endpoint
@@ -116,27 +163,6 @@ app.get('/', (req, res) => {
   });
 });
 
-/**
- * @swagger
- * /health:
- *   get:
- *     summary: Health check endpoint
- *     tags: [General]
- *     responses:
- *       200:
- *         description: Server is running
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: ok
- *                 message:
- *                   type: string
- *                   example: Server is running
- */
 /**
  * @swagger
  * /health:

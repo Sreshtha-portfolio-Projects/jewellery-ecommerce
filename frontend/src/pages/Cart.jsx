@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { showError, showSuccess } from '../utils/toast';
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, loading } = useCart();
@@ -23,6 +24,8 @@ const Cart = () => {
       await updateQuantity(cartItemId, newQuantity);
     } catch (error) {
       console.error('Error updating quantity:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update quantity';
+      showError(errorMessage);
     } finally {
       setUpdating({ ...updating, [cartItemId]: false });
     }
@@ -32,8 +35,11 @@ const Cart = () => {
     setUpdating({ ...updating, [cartItemId]: true });
     try {
       await removeFromCart(cartItemId);
+      showSuccess('Item removed from cart');
     } catch (error) {
       console.error('Error removing item:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to remove item';
+      showError(errorMessage);
     } finally {
       setUpdating({ ...updating, [cartItemId]: false });
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
+import { showSuccess, showError, showConfirm } from '../../utils/toast';
 
 const ProductForm = () => {
   const { id } = useParams();
@@ -24,6 +25,7 @@ const ProductForm = () => {
 
   const [variants, setVariants] = useState([]);
   const [images, setImages] = useState([]);
+  const [pendingImages, setPendingImages] = useState([]); // For new products - files to upload after creation
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -52,7 +54,7 @@ const ProductForm = () => {
       setImages(data.images || []);
     } catch (error) {
       console.error('Error fetching product:', error);
-      alert('Failed to load product');
+      showError('Failed to load product');
       navigate('/admin/products');
     } finally {
       setLoading(false);
@@ -89,28 +91,37 @@ const ProductForm = () => {
     setVariants(updated);
   };
 
-  const handleRemoveVariant = (index) => {
+  const handleRemoveVariant = async (index) => {
     const variant = variants[index];
     if (variant.id && !variant.id.startsWith('temp-')) {
-      if (!window.confirm('Delete this variant?')) return;
-      adminService.deleteVariant(variant.id).catch(console.error);
+      const confirmed = await showConfirm('Delete this variant?');
+      if (!confirmed) return;
+      try {
+        await adminService.deleteVariant(variant.id);
+        showSuccess('Variant deleted successfully');
+      } catch (error) {
+        showError('Failed to delete variant');
+        console.error('Error deleting variant:', error);
+        return; // Don't remove from state if deletion failed
+      }
     }
     setVariants(variants.filter((_, i) => i !== index));
   };
 
   const handleAddImage = () => {
-    const imageUrl = prompt('Enter image URL (or leave empty to upload file):');
-    if (imageUrl) {
+    const imageUrl = prompt('Enter image URL:');
+    if (imageUrl && imageUrl.trim()) {
       setImages([
         ...images,
         {
           id: `temp-${Date.now()}`,
-          image_url: imageUrl,
+          image_url: imageUrl.trim(),
           alt_text: product.name || '',
           display_order: images.length,
           is_primary: images.length === 0
         }
       ]);
+      showSuccess('Image URL added');
     }
   };
 
@@ -119,15 +130,33 @@ const ProductForm = () => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      showError('Please select an image file');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
+      showError('File size must be less than 5MB');
       return;
     }
 
+    // If creating new product, store file to upload after product creation
+    if (!id) {
+      setPendingImages([
+        ...pendingImages,
+        {
+          file,
+          alt_text: product.name || '',
+          display_order: images.length + pendingImages.length,
+          is_primary: images.length === 0 && pendingImages.length === 0
+        }
+      ]);
+      showSuccess('Image will be uploaded after product is created');
+      // Reset file input
+      e.target.value = '';
+      return;
+    }
+
+    // For existing products, upload immediately
     try {
       const formData = new FormData();
       formData.append('image', file);
@@ -135,9 +164,10 @@ const ProductForm = () => {
       formData.append('display_order', images.length);
       formData.append('is_primary', images.length === 0);
 
-      const productId = id || 'new';
+      // Normalize API base URL - remove trailing slash if present
+      const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').replace(/\/+$/, '');
       const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/admin/products/${productId}/images/upload`,
+        `${apiBaseUrl}/api/admin/products/${id}/images/upload`,
         {
           method: 'POST',
           headers: {
@@ -148,26 +178,33 @@ const ProductForm = () => {
       );
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Upload failed');
       }
 
       const data = await response.json();
       setImages([...images, data.image]);
-      alert('Image uploaded successfully!');
+      showSuccess('Image uploaded successfully!');
+      // Reset file input
+      e.target.value = '';
     } catch (error) {
       console.error('Error uploading image:', error);
-      alert('Failed to upload image. Please try using image URL instead.');
+      showError(error.message || 'Failed to upload image. Please try using image URL instead.');
     }
   };
 
   const handleRemoveImage = async (index) => {
     const image = images[index];
     if (image.id && !image.id.startsWith('temp-')) {
-      if (!window.confirm('Delete this image?')) return;
+      const confirmed = await showConfirm('Delete this image?');
+      if (!confirmed) return;
       try {
         await adminService.deleteImage(image.id);
+        showSuccess('Image deleted successfully');
       } catch (error) {
+        showError('Failed to delete image');
         console.error('Error deleting image:', error);
+        return;
       }
     }
     setImages(images.filter((_, i) => i !== index));
@@ -252,6 +289,9 @@ const ProductForm = () => {
             await adminService.reorderImages(id, imageIds);
           }
         }
+
+        showSuccess('Product updated successfully!');
+        navigate('/admin/products');
       } else {
         // Create product
         const result = await adminService.createProduct({
@@ -260,15 +300,63 @@ const ProductForm = () => {
           images: imagesToSave
         });
 
-        navigate(`/admin/products/${result.product.id}`);
+        const newProductId = result.product.id;
+
+        // Upload pending image files
+        if (pendingImages.length > 0) {
+          const uploadErrors = [];
+          for (let i = 0; i < pendingImages.length; i++) {
+            const pendingImage = pendingImages[i];
+            try {
+              const formData = new FormData();
+              formData.append('image', pendingImage.file);
+              formData.append('alt_text', pendingImage.alt_text || product.name || '');
+              formData.append('display_order', imagesToSave.length + i);
+              formData.append('is_primary', pendingImage.is_primary || false);
+
+              // Normalize API base URL - remove trailing slash if present
+              const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').replace(/\/+$/, '');
+              const response = await fetch(
+                `${apiBaseUrl}/api/admin/products/${newProductId}/images/upload`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                  },
+                  body: formData
+                }
+              );
+
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData.message || `Failed to upload image ${i + 1}`;
+                uploadErrors.push(errorMessage);
+                console.error(`Failed to upload image ${i + 1}:`, errorMessage);
+              }
+            } catch (error) {
+              const errorMessage = error.message || `Error uploading image ${i + 1}`;
+              uploadErrors.push(errorMessage);
+              console.error(`Error uploading image ${i + 1}:`, error);
+            }
+          }
+          
+          // Show error toast if any uploads failed
+          if (uploadErrors.length > 0) {
+            if (uploadErrors.length === pendingImages.length) {
+              showError('Failed to upload all images. Please add them manually after product creation.');
+            } else {
+              showError(`Failed to upload ${uploadErrors.length} of ${pendingImages.length} images. Please add them manually.`);
+            }
+          }
+        }
+
+        showSuccess('Product created successfully!');
+        navigate(`/admin/products/${newProductId}`);
         return;
       }
-
-      alert('Product saved successfully!');
-      navigate('/admin/products');
     } catch (error) {
       console.error('Error saving product:', error);
-      alert('Failed to save product: ' + (error.response?.data?.message || error.message));
+      showError('Failed to save product: ' + (error.response?.data?.message || error.message));
     } finally {
       setSaving(false);
     }

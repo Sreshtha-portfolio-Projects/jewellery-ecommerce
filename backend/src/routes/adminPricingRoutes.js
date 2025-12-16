@@ -59,7 +59,7 @@ router.get('/', getPricingRules);
  *                 enum: [metal_markup, weight_based, category_adjustment, seasonal, custom]
  *               conditions:
  *                 type: object
- *                 description: Flexible conditions (e.g., {"metal_type": "GOLD", "weight": {"operator": ">", "value": 5}})
+ *                 description: Flexible conditions JSON object
  *               action_type:
  *                 type: string
  *                 enum: [percentage_markup, fixed_markup, percentage_discount, fixed_discount]

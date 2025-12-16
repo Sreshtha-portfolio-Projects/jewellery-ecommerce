@@ -31,13 +31,13 @@ export const CartProvider = ({ children }) => {
     fetchCart();
   }, [isAuthenticated]);
 
-  const addToCart = async (productId, quantity = 1) => {
+  const addToCart = async (productId, quantity = 1, variantId = null) => {
     if (!isAuthenticated) {
       throw new Error('Please login to add items to cart');
     }
 
     try {
-      await cartService.addToCart(productId, quantity);
+      await cartService.addToCart(productId, quantity, variantId);
       await fetchCart();
     } catch (error) {
       throw error;

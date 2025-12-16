@@ -22,8 +22,12 @@ const options = {
         description: 'Development server'
       },
       {
-        url: 'https://api.aldoradojewells.com',
-        description: 'Production server'
+        url: 'https://api.valobuy.shop',
+        description: 'Production server (ValoBuy)'
+      },
+      {
+        url: 'https://api.valo.buy.com',
+        description: 'Production server (ValoBuy Alt)'
       }
     ],
     components: {
@@ -129,10 +133,7 @@ const options = {
             id: { type: 'string', format: 'uuid' },
             user_id: { type: 'string', format: 'uuid' },
             intent_number: { type: 'string' },
-            status: { 
-              type: 'string', 
-              enum: ['DRAFT', 'INTENT_CREATED', 'EXPIRED', 'CONVERTED', 'CANCELLED'] 
-            },
+            status: { type: 'string', enum: ['DRAFT', 'INTENT_CREATED', 'EXPIRED', 'CONVERTED', 'CANCELLED'] },
             cart_snapshot: { type: 'object' },
             subtotal: { type: 'number', format: 'decimal' },
             discount_amount: { type: 'number', format: 'decimal' },
@@ -156,10 +157,7 @@ const options = {
             locked_at: { type: 'string', format: 'date-time' },
             expires_at: { type: 'string', format: 'date-time' },
             released_at: { type: 'string', format: 'date-time', nullable: true },
-            status: { 
-              type: 'string', 
-              enum: ['LOCKED', 'RELEASED', 'CONVERTED', 'EXPIRED'] 
-            }
+            status: { type: 'string', enum: ['LOCKED', 'RELEASED', 'CONVERTED', 'EXPIRED'] }
           }
         },
         AdminSetting: {
@@ -168,14 +166,8 @@ const options = {
             id: { type: 'string', format: 'uuid' },
             setting_key: { type: 'string' },
             setting_value: { type: 'string' },
-            setting_type: { 
-              type: 'string', 
-              enum: ['string', 'number', 'boolean', 'json'] 
-            },
-            category: { 
-              type: 'string', 
-              enum: ['pricing', 'tax', 'shipping', 'inventory', 'checkout', 'general'] 
-            },
+            setting_type: { type: 'string', enum: ['string', 'number', 'boolean', 'json'] },
+            category: { type: 'string', enum: ['pricing', 'tax', 'shipping', 'inventory', 'checkout', 'general'] },
             description: { type: 'string', nullable: true },
             updated_at: { type: 'string', format: 'date-time' }
           }
@@ -190,36 +182,26 @@ const options = {
             item_count: { type: 'integer' },
             last_activity_at: { type: 'string', format: 'date-time' },
             abandoned_at: { type: 'string', format: 'date-time', nullable: true },
-            recovered_at: { type: 'string', format: 'date-time', nullable: true },
-            status: { 
-              type: 'string', 
-              enum: ['ACTIVE', 'ABANDONED', 'RECOVERED', 'EXPIRED'] 
-            },
+            status: { type: 'string', enum: ['ACTIVE', 'ABANDONED', 'RECOVERED', 'EXPIRED'] },
             created_at: { type: 'string', format: 'date-time' }
           }
         },
-        InventorySummary: {
+        PaymentOrder: {
           type: 'object',
           properties: {
-            total_stock: { type: 'integer' },
-            locked_stock: { type: 'integer' },
-            available_stock: { type: 'integer' },
-            low_stock_variants: { 
-              type: 'array',
-              items: { $ref: '#/components/schemas/ProductVariant' }
-            },
-            active_locks: { type: 'integer' }
+            razorpay_order_id: { type: 'string' },
+            amount: { type: 'number', description: 'Amount in paise' },
+            currency: { type: 'string', example: 'INR' },
+            key_id: { type: 'string', description: 'Razorpay Key ID for frontend' }
           }
         },
-        AbandonedCartStats: {
+        PaymentVerification: {
           type: 'object',
           properties: {
-            total_abandoned: { type: 'integer' },
-            total_active: { type: 'integer' },
-            abandoned_value: { type: 'number', format: 'decimal' },
-            active_value: { type: 'number', format: 'decimal' },
-            abandonment_rate: { type: 'number', format: 'float' },
-            timeout_minutes: { type: 'integer' }
+            verified: { type: 'boolean' },
+            order_id: { type: 'string', format: 'uuid' },
+            order_number: { type: 'string' },
+            message: { type: 'string' }
           }
         },
         Error: {
@@ -237,18 +219,16 @@ const options = {
       { name: 'Products', description: 'Public product endpoints' },
       { name: 'Admin Products', description: 'Admin product management endpoints' },
       { name: 'Cart', description: 'Shopping cart operations' },
-      { name: 'Orders', description: 'Order management and order intents' },
-      { name: 'Order Intents', description: 'Order intent system (pre-payment)' },
+      { name: 'Orders', description: 'Order management' },
+      { name: 'Order Intents', description: 'Order intent management (pre-payment)' },
+      { name: 'Payments', description: 'Razorpay payment integration endpoints' },
       { name: 'Addresses', description: 'User address management' },
       { name: 'Wishlist', description: 'Wishlist operations' },
       { name: 'Discounts', description: 'Discount/coupon management' },
       { name: 'Reviews', description: 'Product reviews and ratings' },
       { name: 'Delivery', description: 'Delivery and shipping information' },
       { name: 'Shipments', description: 'Shipment and tracking management' },
-      { name: 'Admin', description: 'Admin dashboard, analytics, and settings' },
-      { name: 'Admin Settings', description: 'Admin configuration management' },
-      { name: 'Admin Inventory', description: 'Inventory lock management' },
-      { name: 'Abandoned Carts', description: 'Abandoned cart tracking and management' },
+      { name: 'Admin', description: 'Admin dashboard, analytics, settings, inventory, and abandoned carts' },
       { name: 'Pricing Rules', description: 'Dynamic pricing rules management' }
     ]
   },

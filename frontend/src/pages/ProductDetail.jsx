@@ -6,6 +6,7 @@ import { reviewService } from '../services/reviewService';
 import { productPairingService } from '../services/productPairingService';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { showSuccess, showError } from '../utils/toast';
 import ProductCard from '../components/ProductCard';
 
 const ProductDetail = () => {
@@ -55,7 +56,7 @@ const ProductDetail = () => {
       }
     } catch (error) {
       console.error('Error fetching product:', error);
-      setMessage('Product not found');
+      showError('Failed to load product. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -88,28 +89,23 @@ const ProductDetail = () => {
 
     // Check if variant is required but not selected
     if (product.variants && product.variants.length > 0 && !selectedVariant) {
-      setMessage('Please select a variant');
-      setTimeout(() => setMessage(''), 3000);
+      showError('Please select a variant');
       return;
     }
 
     // Check stock
     if (selectedVariant && selectedVariant.stock_quantity < quantity) {
-      setMessage('Insufficient stock');
-      setTimeout(() => setMessage(''), 3000);
+      showError('Insufficient stock');
       return;
     }
 
     try {
       setAddingToCart(true);
-      // For now, add product with variant info in metadata
-      // In production, cart should support variant_id
       await addToCart(product.id, quantity, selectedVariant?.id);
-      setMessage('Added to cart successfully!');
-      setTimeout(() => setMessage(''), 3000);
+      showSuccess('Added to cart successfully!');
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Failed to add to cart');
-      setTimeout(() => setMessage(''), 3000);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to add to cart';
+      showError(errorMessage);
     } finally {
       setAddingToCart(false);
     }
@@ -123,8 +119,7 @@ const ProductDetail = () => {
 
     // Check if variant is required but not selected
     if (product.variants && product.variants.length > 0 && !selectedVariant) {
-      setMessage('Please select a variant');
-      setTimeout(() => setMessage(''), 3000);
+      showError('Please select a variant');
       return;
     }
 
@@ -133,8 +128,8 @@ const ProductDetail = () => {
       await addToCart(product.id, quantity, selectedVariant?.id);
       navigate('/checkout');
     } catch (error) {
-      setMessage(error.response?.data?.message || 'Failed to add to cart');
-      setTimeout(() => setMessage(''), 3000);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to add to cart';
+      showError(errorMessage);
       setAddingToCart(false);
     }
   };
