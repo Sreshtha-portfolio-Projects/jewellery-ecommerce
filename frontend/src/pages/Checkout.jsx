@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { addressService } from '../services/addressService';
 import { discountService } from '../services/discountService';
 import { orderService } from '../services/orderService';
+import { showError, showSuccess } from '../utils/toast';
 
 const Checkout = () => {
   const { cartItems, cartCount, refreshCart } = useCart();
@@ -117,7 +118,7 @@ const Checkout = () => {
 
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
-      alert('Please select a delivery address');
+      showError('Please select a delivery address');
       return;
     }
 
@@ -138,7 +139,7 @@ const Checkout = () => {
       await refreshCart();
     } catch (error) {
       console.error('Error placing order:', error);
-      alert(error.response?.data?.message || 'Failed to place order. Please try again.');
+      showError(error.response?.data?.message || 'Failed to place order. Please try again.');
     } finally {
       setProcessing(false);
     }

@@ -173,6 +173,7 @@ The order intent system (already implemented) provides a critical foundation:
    - Dashboard → Settings → Webhooks
    - Add webhook URL: `https://abc123.ngrok.io/api/payments/webhook`
    - Save
+   <!-- secret- ?U5stGz6B9yejT@S -->
 
 6. **⚠️ Note**: Free ngrok URLs change every time you restart. For testing, you can:
    - Use paid ngrok for static URLs

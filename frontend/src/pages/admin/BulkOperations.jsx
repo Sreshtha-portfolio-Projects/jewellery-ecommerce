@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { adminService } from '../../services/adminService';
+import { showError, showSuccess } from '../../utils/toast';
 
 const BulkOperations = () => {
   const [importType, setImportType] = useState('both');
@@ -13,7 +14,7 @@ const BulkOperations = () => {
     if (!file) return;
 
     if (!file.name.endsWith('.csv')) {
-      alert('Please upload a CSV file');
+      showError('Please upload a CSV file');
       return;
     }
 
@@ -26,7 +27,7 @@ const BulkOperations = () => {
 
   const handleImport = async () => {
     if (!fileContent) {
-      alert('Please upload a CSV file first');
+      showError('Please upload a CSV file first');
       return;
     }
 
@@ -35,14 +36,14 @@ const BulkOperations = () => {
       const result = await adminService.bulkImport(fileContent, importType);
       setImportResult(result);
       if (result.successful > 0) {
-        alert(`Successfully imported ${result.successful} rows`);
+        showSuccess(`Successfully imported ${result.successful} rows`);
       }
       if (result.failed > 0) {
-        alert(`Failed to import ${result.failed} rows. Check errors below.`);
+        showError(`Failed to import ${result.failed} rows. Check errors below.`);
       }
     } catch (error) {
       console.error('Error importing:', error);
-      alert('Failed to import: ' + (error.response?.data?.message || error.message));
+      showError('Failed to import: ' + (error.response?.data?.message || error.message));
     } finally {
       setImporting(false);
     }
@@ -63,10 +64,10 @@ const BulkOperations = () => {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
       
-      alert('Export completed!');
+      showSuccess('Export completed!');
     } catch (error) {
       console.error('Error exporting:', error);
-      alert('Failed to export: ' + (error.response?.data?.message || error.message));
+      showError('Failed to export: ' + (error.response?.data?.message || error.message));
     } finally {
       setExporting(false);
     }

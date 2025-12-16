@@ -26,7 +26,7 @@ const getAllProducts = async (req, res) => {
       query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,sku.ilike.%${search}%`);
     }
 
-    if (is_active !== undefined) {
+    if (is_active !== undefined && is_active !== '') {
       query = query.eq('is_active', is_active === 'true');
     }
 

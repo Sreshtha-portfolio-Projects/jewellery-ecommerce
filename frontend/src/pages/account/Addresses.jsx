@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { addressService } from '../../services/addressService';
+import { showError, showSuccess, showConfirm } from '../../utils/toast';
 
 const Addresses = () => {
   const [addresses, setAddresses] = useState([]);
@@ -69,14 +70,17 @@ const Addresses = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this address?')) {
+    const confirmed = await showConfirm('Are you sure you want to delete this address?');
+    if (!confirmed) {
       return;
     }
 
     try {
       await addressService.delete(id);
+      showSuccess('Address deleted successfully');
       await fetchAddresses();
     } catch (err) {
+      showError('Failed to delete address');
       setError(err.response?.data?.message || 'Failed to delete address');
     }
   };
