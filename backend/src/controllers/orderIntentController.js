@@ -30,9 +30,17 @@ const createOrderIntent = async (req, res) => {
       `)
       .eq('user_id', userId);
 
-    if (cartError || !cartItems || cartItems.length === 0) {
+    if (cartError) {
+      console.error('Error fetching cart:', cartError);
+      return res.status(500).json({ message: 'Error fetching cart', error: cartError.message });
+    }
+
+    if (!cartItems || cartItems.length === 0) {
+      console.log('Cart is empty for user:', userId);
       return res.status(400).json({ message: 'Cart is empty' });
     }
+
+    console.log('Cart items found:', cartItems.length, 'for user:', userId);
 
     // Revalidate cart
     const validation = await cartRevalidationService.revalidateCart(
@@ -48,6 +56,7 @@ const createOrderIntent = async (req, res) => {
     );
 
     if (!validation.valid) {
+      console.error('Cart validation failed for user:', userId, 'Errors:', validation.errors);
       return res.status(400).json({
         message: 'Cart validation failed',
         errors: validation.errors,
@@ -116,53 +125,110 @@ const createOrderIntent = async (req, res) => {
     // Lock inventory
     const lockResults = [];
     for (const item of cartItems) {
-      // For now, if no variant_id, we'll need to handle product-level stock
-      // In a full variant system, every cart item should have a variant_id
       const variantId = item.variant_id || item.variant?.id;
-      if (!variantId) {
-        // If no variant, skip inventory locking for now
-        // TODO: Handle product-level inventory if variants are optional
-        console.warn('Cart item missing variant_id:', item.id);
-        continue;
-      }
+      const productId = item.product_id;
+      let availableStock;
 
-      // Check available stock again (race condition protection)
-      const availableStock = await cartRevalidationService.getAvailableStock(variantId);
-      if (availableStock < item.quantity) {
-        // Rollback order intent
-        await supabase.from('order_intents').delete().eq('id', orderIntent.id);
-        return res.status(400).json({
-          message: `Insufficient stock for item. Available: ${availableStock}`,
-          requiresRefresh: true
-        });
-      }
+      if (variantId) {
+        // Check variant stock
+        availableStock = await cartRevalidationService.getAvailableStock(variantId);
+        
+        if (availableStock < item.quantity) {
+          console.error('Insufficient stock for variant:', variantId, 'Available:', availableStock, 'Requested:', item.quantity);
+          // Rollback order intent
+          await supabase.from('order_intents').delete().eq('id', orderIntent.id);
+          return res.status(400).json({
+            message: `Insufficient stock for item. Available: ${availableStock}`,
+            requiresRefresh: true
+          });
+        }
 
-      // Create inventory lock
-      const { data: lock, error: lockError } = await supabase
-        .from('inventory_locks')
-        .insert({
-          order_intent_id: orderIntent.id,
+        // Create inventory lock for variant
+        const { data: lock, error: lockError } = await supabase
+          .from('inventory_locks')
+          .insert({
+            order_intent_id: orderIntent.id,
+            variant_id: variantId,
+            quantity_locked: item.quantity,
+            expires_at: expiresAt.toISOString()
+          })
+          .select()
+          .single();
+
+        if (lockError) {
+          console.error('Error locking inventory:', lockError);
+          // Rollback order intent
+          await supabase.from('order_intents').delete().eq('id', orderIntent.id);
+          return res.status(500).json({ message: 'Failed to lock inventory' });
+        }
+
+        // Deduct variant stock
+        await supabase.rpc('decrement_stock', {
           variant_id: variantId,
-          quantity_locked: item.quantity,
-          expires_at: expiresAt.toISOString()
-        })
-        .select()
-        .single();
+          quantity: item.quantity
+        });
 
-      if (lockError) {
-        console.error('Error locking inventory:', lockError);
-        // Rollback order intent
-        await supabase.from('order_intents').delete().eq('id', orderIntent.id);
-        return res.status(500).json({ message: 'Failed to lock inventory' });
+        lockResults.push(lock);
+      } else {
+        // Product without variant - check product stock
+        const { data: productData } = await supabase
+          .from('products')
+          .select('stock_quantity')
+          .eq('id', productId)
+          .single();
+
+        availableStock = productData?.stock_quantity || 0;
+
+        // Check existing locks for this product
+        const { data: existingLocks } = await supabase
+          .from('inventory_locks')
+          .select('quantity_locked')
+          .eq('variant_id', productId) // Using variant_id column to store product_id for non-variant items
+          .eq('status', 'LOCKED')
+          .gt('expires_at', new Date().toISOString());
+
+        const lockedQty = (existingLocks || []).reduce((sum, lock) => sum + (lock.quantity_locked || 0), 0);
+        availableStock = Math.max(0, availableStock - lockedQty);
+
+        if (availableStock < item.quantity) {
+          console.error('Insufficient stock for product:', productId, 'Available:', availableStock, 'Requested:', item.quantity);
+          // Rollback order intent
+          await supabase.from('order_intents').delete().eq('id', orderIntent.id);
+          return res.status(400).json({
+            message: `Insufficient stock for item. Available: ${availableStock}`,
+            requiresRefresh: true
+          });
+        }
+
+        // Create inventory lock for product (using variant_id column to store product_id)
+        const { data: lock, error: lockError } = await supabase
+          .from('inventory_locks')
+          .insert({
+            order_intent_id: orderIntent.id,
+            variant_id: productId, // Store product_id in variant_id column for non-variant items
+            quantity_locked: item.quantity,
+            expires_at: expiresAt.toISOString()
+          })
+          .select()
+          .single();
+
+        if (lockError) {
+          console.error('Error locking product inventory:', lockError);
+          // Rollback order intent
+          await supabase.from('order_intents').delete().eq('id', orderIntent.id);
+          return res.status(500).json({ message: 'Failed to lock inventory' });
+        }
+
+        // Deduct product stock
+        await supabase
+          .from('products')
+          .update({
+            stock_quantity: Math.max(0, (productData?.stock_quantity || 0) - item.quantity)
+          })
+          .eq('id', productId);
+
+        lockResults.push(lock);
       }
-
-      // Deduct stock
-      await supabase.rpc('decrement_stock', {
-        variant_id: variantId,
-        quantity: item.quantity
-      });
-
-      lockResults.push(lock);
     }
 
     // Lock discount code if used

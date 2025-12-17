@@ -21,79 +21,133 @@ class CartRevalidationService {
     };
 
     try {
-      // Get all variant IDs
-      const variantIds = cartItems
-        .map(item => item.variant_id || item.product_id)
-        .filter(Boolean);
-
-      if (variantIds.length === 0) {
+      if (cartItems.length === 0) {
         validationResult.valid = false;
         validationResult.errors.push('Cart is empty');
         return validationResult;
       }
 
-      // Fetch current variant data
-      const { data: variants } = await supabase
-        .from('product_variants')
-        .select(`
-          *,
-          product:products(*)
-        `)
-        .in('id', variantIds);
+      // Separate items with variants and items without variants
+      const variantIds = cartItems
+        .map(item => item.variant_id)
+        .filter(Boolean);
+      
+      const productIds = cartItems
+        .filter(item => !item.variant_id)
+        .map(item => item.product_id)
+        .filter(Boolean);
 
+      // Fetch variant data for items with variants
       const variantMap = {};
-      (variants || []).forEach(v => {
-        variantMap[v.id] = v;
-      });
+      if (variantIds.length > 0) {
+        const { data: variants } = await supabase
+          .from('product_variants')
+          .select(`
+            *,
+            product:products(*)
+          `)
+          .in('id', variantIds);
+
+        (variants || []).forEach(v => {
+          variantMap[v.id] = v;
+        });
+      }
+
+      // Fetch product data for items without variants
+      const productMap = {};
+      if (productIds.length > 0) {
+        const { data: products } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', productIds);
+
+        (products || []).forEach(p => {
+          productMap[p.id] = p;
+        });
+      }
 
       // Validate each cart item
       for (const item of cartItems) {
-        const variantId = item.variant_id || item.product_id;
-        const variant = variantMap[variantId];
+        let variant = null;
+        let product = null;
 
-        if (!variant) {
-          validationResult.valid = false;
-          validationResult.errors.push(`Variant ${variantId} no longer exists`);
-          continue;
+        if (item.variant_id) {
+          // Item has a variant
+          variant = variantMap[item.variant_id];
+          
+          if (!variant) {
+            validationResult.valid = false;
+            validationResult.errors.push(`Variant ${item.variant_id} no longer exists`);
+            continue;
+          }
+
+          product = variant.product;
+        } else {
+          // Item is direct product (no variant)
+          product = productMap[item.product_id] || item.product;
+          
+          if (!product) {
+            validationResult.valid = false;
+            validationResult.errors.push(`Product ${item.product_id} no longer exists`);
+            continue;
+          }
         }
 
-        // Check if variant is active
-        if (!variant.is_active) {
+        // Check if variant is active (if applicable)
+        if (variant && !variant.is_active) {
           validationResult.valid = false;
-          validationResult.errors.push(`Variant ${variantId} is no longer available`);
+          validationResult.errors.push(`Variant ${item.variant_id} is no longer available`);
           continue;
         }
 
         // Check if product is active
-        if (!variant.product?.is_active) {
+        if (!product || !product.is_active) {
           validationResult.valid = false;
-          validationResult.errors.push(`Product ${variant.product?.name} is no longer available`);
+          validationResult.errors.push(`Product ${product?.name || 'Unknown'} is no longer available`);
           continue;
         }
 
-        // Check stock availability (considering locked inventory)
-        const availableStock = await this.getAvailableStock(variantId);
+        // Check stock availability
+        let availableStock;
+        if (item.variant_id) {
+          // Check variant stock
+          availableStock = await this.getAvailableStock(item.variant_id);
+        } else {
+          // Check product stock
+          availableStock = product.stock_quantity || 0;
+          // For product-level stock, also check if there are locked quantities
+          const { data: locks } = await supabase
+            .from('inventory_locks')
+            .select('quantity_locked')
+            .eq('variant_id', item.product_id)
+            .eq('status', 'LOCKED')
+            .gt('expires_at', new Date().toISOString());
+          
+          const lockedQty = (locks || []).reduce((sum, lock) => sum + (lock.quantity_locked || 0), 0);
+          availableStock = Math.max(0, availableStock - lockedQty);
+        }
+
         if (availableStock < item.quantity) {
           validationResult.valid = false;
           validationResult.stockUnavailable = true;
           validationResult.errors.push(
-            `Insufficient stock for ${variant.product?.name}. Available: ${availableStock}, Requested: ${item.quantity}`
+            `Insufficient stock for ${product?.name}. Available: ${availableStock}, Requested: ${item.quantity}`
           );
           continue;
         }
 
         // Check price changes
-        const currentPrice = variant.price_override || variant.product?.base_price || variant.product?.price || 0;
+        const currentPrice = variant?.price_override || product?.base_price || product?.price || 0;
         const itemPrice = item.product?.price || item.unit_price || 0;
 
         if (Math.abs(currentPrice - itemPrice) > 0.01) {
           validationResult.priceChanged = true;
           validationResult.warnings.push(
-            `Price changed for ${variant.product?.name}. Old: ₹${itemPrice}, New: ₹${currentPrice}`
+            `Price changed for ${product?.name}. Old: ₹${itemPrice}, New: ₹${currentPrice}`
           );
           validationResult.updatedItems.push({
             ...item,
-            product: variant.product,
+            product: product,
             variant: variant,
             new_price: currentPrice
           });
@@ -103,9 +157,16 @@ class CartRevalidationService {
       // Validate discount code if provided
       if (discountCode) {
         const subtotal = cartItems.reduce((sum, item) => {
-          const variantId = item.variant_id || item.product_id;
-          const variant = variantMap[variantId];
-          const price = variant?.price_override || variant?.product?.base_price || item.product?.price || 0;
+          let price = 0;
+          
+          if (item.variant_id) {
+            const variant = variantMap[item.variant_id];
+            price = variant?.price_override || variant?.product?.base_price || variant?.product?.price || 0;
+          } else {
+            const product = productMap[item.product_id] || item.product;
+            price = product?.base_price || product?.price || 0;
+          }
+          
           return sum + (price * item.quantity);
         }, 0);
 
