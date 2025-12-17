@@ -44,7 +44,8 @@ jewellery-ecommerce/
 │   └── add-razorpay-order-id-to-intents.sql
 │
 └── Documents/            # Documentation
-    ├── NPM_SETUP_GUIDE.md
+    ├── DEPLOYMENT_GUIDE.md          # Complete deployment guide (Vercel + Render)
+    ├── NPM_SETUP_GUIDE.md           # NPM commands and setup
     ├── RAZORPAY_PAYMENT_INTEGRATION.md
     ├── RAZORPAY_TESTING_GUIDE.md
     └── ...
@@ -419,19 +420,32 @@ The platform follows a luxury jewelry brand aesthetic:
 
 ## 🚀 Deployment
 
-### Backend Deployment
+For a complete step-by-step deployment guide, see: **[DEPLOYMENT_GUIDE.md](./Documents/DEPLOYMENT_GUIDE.md)**
 
+The deployment guide covers:
+- ✅ Deploying backend to Render
+- ✅ Deploying frontend to Vercel
+- ✅ Configuring Razorpay webhooks
+- ✅ Setting up Cloudflare (optional)
+- ✅ Custom domain configuration
+- ✅ Troubleshooting common issues
+
+### Quick Overview
+
+**Backend (Render):**
 1. Set `NODE_ENV=production` in environment variables
-2. Update CORS allowed origins
-3. Set production Razorpay keys
-4. Update webhook URL in Razorpay dashboard
-5. Deploy to your hosting service (e.g., Railway, Render, AWS)
+2. Configure all required environment variables (Supabase, JWT, Razorpay)
+3. Deploy as Web Service on Render
 
-### Frontend Deployment
-
+**Frontend (Vercel):**
 1. Set `VITE_API_BASE_URL` to production API URL
-2. Run `npm run build`
-3. Deploy `dist/` folder to hosting (e.g., Vercel, Netlify, Cloudflare Pages)
+2. Connect GitHub repository
+3. Deploy with Vite preset
+
+**After Initial Deployment:**
+1. Configure Razorpay webhooks
+2. Set up custom domains (optional)
+3. Configure Cloudflare (optional)
 
 ## 🐛 Troubleshooting
 
