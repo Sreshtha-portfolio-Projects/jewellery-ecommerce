@@ -28,25 +28,27 @@ const createAddress = async (req, res) => {
     const userId = req.user.userId;
     
     // Support both camelCase (from API docs) and snake_case (from frontend)
-    const fullName = req.body.fullName || req.body.full_name;
-    const phone = req.body.phone || req.body.phone_number; // Support both formats
-    const addressLine1 = req.body.addressLine1 || req.body.address_line1;
+    // Trim string values to remove whitespace
+    const fullName = (req.body.fullName || req.body.full_name || '').toString().trim();
+    const phone = (req.body.phone || req.body.phone_number || '').toString().trim();
+    const addressLine1 = (req.body.addressLine1 || req.body.address_line1 || '').toString().trim();
     const addressLine2 = req.body.addressLine2 || req.body.address_line2;
-    const city = req.body.city;
-    const state = req.body.state;
-    const postalCode = req.body.postalCode || req.body.postal_code;
-    const country = req.body.country;
-    const isDefault = req.body.isDefault !== undefined ? req.body.isDefault : req.body.is_default;
-    const addressType = req.body.addressType || req.body.address_type;
+    const addressLine2Trimmed = addressLine2 ? addressLine2.toString().trim() : null;
+    const city = (req.body.city || '').toString().trim();
+    const state = (req.body.state || '').toString().trim();
+    const postalCode = (req.body.postalCode || req.body.postal_code || '').toString().trim();
+    const country = (req.body.country || 'India').toString().trim();
+    const isDefault = req.body.isDefault !== undefined ? Boolean(req.body.isDefault) : (req.body.is_default !== undefined ? Boolean(req.body.is_default) : false);
+    const addressType = (req.body.addressType || req.body.address_type || 'shipping').toString().trim();
 
     // Validate required fields and provide specific error messages
     const missingFields = [];
-    if (!fullName || (typeof fullName === 'string' && fullName.trim() === '')) missingFields.push('fullName/full_name');
-    if (!phone || (typeof phone === 'string' && phone.trim() === '')) missingFields.push('phone');
-    if (!addressLine1 || (typeof addressLine1 === 'string' && addressLine1.trim() === '')) missingFields.push('addressLine1/address_line1');
-    if (!city || (typeof city === 'string' && city.trim() === '')) missingFields.push('city');
-    if (!state || (typeof state === 'string' && state.trim() === '')) missingFields.push('state');
-    if (!postalCode || (typeof postalCode === 'string' && postalCode.trim() === '')) missingFields.push('postalCode/postal_code');
+    if (!fullName) missingFields.push('fullName/full_name');
+    if (!phone) missingFields.push('phone');
+    if (!addressLine1) missingFields.push('addressLine1/address_line1');
+    if (!city) missingFields.push('city');
+    if (!state) missingFields.push('state');
+    if (!postalCode) missingFields.push('postalCode/postal_code');
 
     if (missingFields.length > 0) {
       return res.status(400).json({ 
@@ -57,21 +59,27 @@ const createAddress = async (req, res) => {
 
     // If setting as default, unset other defaults
     if (isDefault) {
-      await supabase
+      const { error: updateError } = await supabase
         .from('addresses')
         .update({ is_default: false })
         .eq('user_id', userId)
         .eq('is_default', true);
+      
+      if (updateError) {
+        console.error('Error unsetting default addresses:', updateError);
+        // Continue anyway - this is not critical
+      }
     }
 
-    const { data, error } = await supabase
+    // Insert the address
+    const { data: insertData, error: insertError } = await supabase
       .from('addresses')
       .insert({
         user_id: userId,
         full_name: fullName,
         phone,
         address_line1: addressLine1,
-        address_line2: addressLine2 || null,
+        address_line2: addressLine2Trimmed || null,
         city,
         state,
         postal_code: postalCode,
@@ -79,15 +87,27 @@ const createAddress = async (req, res) => {
         is_default: isDefault || false,
         address_type: addressType || 'shipping'
       })
-      .select()
-      .single();
+      .select();
 
-    if (error) {
-      console.error('Error creating address:', error);
-      return res.status(500).json({ message: 'Error creating address' });
+    if (insertError) {
+      console.error('Error creating address:', insertError);
+      console.error('Error details:', JSON.stringify(insertError, null, 2));
+      console.error('Request body:', JSON.stringify(req.body, null, 2));
+      console.error('User ID:', userId);
+      return res.status(500).json({ 
+        message: 'Error creating address',
+        error: process.env.NODE_ENV === 'development' ? insertError.message : undefined
+      });
     }
 
-    res.status(201).json(data);
+    // Check if we got data back
+    if (!insertData || insertData.length === 0) {
+      console.error('Insert succeeded but no data returned');
+      return res.status(500).json({ message: 'Address created but could not be retrieved' });
+    }
+
+    // Return the first (and should be only) inserted address
+    res.status(201).json(insertData[0]);
   } catch (error) {
     console.error('Error in createAddress:', error);
     res.status(500).json({ message: 'Internal server error' });
