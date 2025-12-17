@@ -64,10 +64,12 @@ const releaseInventoryLock = async (req, res) => {
       return res.status(400).json({ message: `Lock is already ${lock.status}` });
     }
 
-    // Restore stock
+    // Restore stock using universal function
+    const isVariant = lock.is_variant_lock !== false; // Default to true for old records
     await supabase.rpc('increment_stock', {
-      variant_id: lock.variant_id,
-      quantity: lock.quantity_locked
+      item_id: lock.variant_id,
+      quantity: lock.quantity_locked,
+      is_variant: isVariant
     });
 
     // Mark as released

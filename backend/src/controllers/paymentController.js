@@ -306,10 +306,12 @@ const handleWebhook = async (req, res) => {
           .eq('status', 'LOCKED');
 
         for (const lock of locks || []) {
-          // Restore stock
+          // Restore stock using universal function
+          const isVariant = lock.is_variant_lock !== false; // Default to true for old records
           await supabase.rpc('increment_stock', {
-            variant_id: lock.variant_id,
-            quantity: lock.quantity_locked
+            item_id: lock.variant_id,
+            quantity: lock.quantity_locked,
+            is_variant: isVariant
           });
 
           // Mark lock as released

@@ -115,37 +115,23 @@ const convertIntentToOrder = async (orderIntentId, paymentDetails = {}) => {
       throw new Error('Failed to create order items');
     }
 
-    // Convert inventory locks to stock deduction
+    // Mark inventory locks as converted (stock already deducted during lock creation)
     const { data: locks } = await supabase
       .from('inventory_locks')
       .select('*')
       .eq('order_intent_id', orderIntentId)
       .eq('status', 'LOCKED');
 
+    // Just mark locks as converted - stock was already deducted when order intent was created
     for (const lock of locks || []) {
-      // Deduct stock from variant
-      const { data: variant } = await supabase
-        .from('product_variants')
-        .select('stock_quantity')
-        .eq('id', lock.variant_id)
-        .single();
-
-      if (variant && variant.stock_quantity >= lock.quantity_locked) {
-        await supabase
-          .from('product_variants')
-          .update({ stock_quantity: variant.stock_quantity - lock.quantity_locked })
-          .eq('id', lock.variant_id);
-
-        // Mark lock as converted
-        await supabase
-          .from('inventory_locks')
-          .update({
-            status: 'CONVERTED',
-            converted_at: new Date().toISOString(),
-            order_id: order.id
-          })
-          .eq('id', lock.id);
-      }
+      await supabase
+        .from('inventory_locks')
+        .update({
+          status: 'CONVERTED',
+          converted_at: new Date().toISOString(),
+          order_id: order.id
+        })
+        .eq('id', lock.id);
     }
 
     // Update discount used count
