@@ -108,24 +108,9 @@ class CartRevalidationService {
         }
 
         // Check stock availability
-        let availableStock;
-        if (item.variant_id) {
-          // Check variant stock
-          availableStock = await this.getAvailableStock(item.variant_id);
-        } else {
-          // Check product stock
-          availableStock = product.stock_quantity || 0;
-          // For product-level stock, also check if there are locked quantities
-          const { data: locks } = await supabase
-            .from('inventory_locks')
-            .select('quantity_locked')
-            .eq('variant_id', item.product_id)
-            .eq('status', 'LOCKED')
-            .gt('expires_at', new Date().toISOString());
-          
-          const lockedQty = (locks || []).reduce((sum, lock) => sum + (lock.quantity_locked || 0), 0);
-          availableStock = Math.max(0, availableStock - lockedQty);
-        }
+        const isVariant = !!item.variant_id;
+        const itemId = item.variant_id || item.product_id;
+        const availableStock = await this.getAvailableStock(itemId, isVariant);
 
         if (availableStock < item.quantity) {
           validationResult.valid = false;
@@ -193,28 +178,42 @@ class CartRevalidationService {
   /**
    * Get available stock (total - locked)
    */
-  async getAvailableStock(variantId) {
+  async getAvailableStock(itemId, isVariant = true) {
     try {
-      // Get variant stock
-      const { data: variant } = await supabase
-        .from('product_variants')
-        .select('stock_quantity')
-        .eq('id', variantId)
-        .single();
+      let totalStock = 0;
 
-      if (!variant) return 0;
+      if (isVariant) {
+        // Get variant stock
+        const { data: variant } = await supabase
+          .from('product_variants')
+          .select('stock_quantity')
+          .eq('id', itemId)
+          .single();
+
+        totalStock = variant?.stock_quantity || 0;
+      } else {
+        // Get product stock
+        const { data: product } = await supabase
+          .from('products')
+          .select('stock_quantity')
+          .eq('id', itemId)
+          .single();
+
+        totalStock = product?.stock_quantity || 0;
+      }
 
       // Get locked quantity
       const { data: locks } = await supabase
         .from('inventory_locks')
         .select('quantity_locked')
-        .eq('variant_id', variantId)
+        .eq('variant_id', itemId)
+        .eq('is_variant_lock', isVariant)
         .eq('status', 'LOCKED')
         .gt('expires_at', new Date().toISOString());
 
-      const lockedQuantity = (locks || []).reduce((sum, lock) => sum + lock.quantity_locked, 0);
+      const lockedQuantity = (locks || []).reduce((sum, lock) => sum + (lock.quantity_locked || 0), 0);
 
-      return Math.max(0, variant.stock_quantity - lockedQuantity);
+      return Math.max(0, totalStock - lockedQuantity);
     } catch (error) {
       console.error('Error getting available stock:', error);
       return 0;
