@@ -8,15 +8,10 @@ const getProductReviews = async (req, res) => {
     const { productId } = req.params;
     const { limit = 10, offset = 0 } = req.query;
 
+    // Fetch reviews without user join (auth.users is not accessible via PostgREST)
     const { data: reviews, error } = await supabase
       .from('product_reviews')
-      .select(`
-        *,
-        user:auth.users!user_id (
-          email,
-          raw_user_meta_data
-        )
-      `)
+      .select('*')
       .eq('product_id', productId)
       .order('created_at', { ascending: false })
       .range(parseInt(offset), parseInt(offset) + parseInt(limit) - 1);
@@ -25,6 +20,44 @@ const getProductReviews = async (req, res) => {
       console.error('Error fetching reviews:', error);
       return res.status(500).json({ message: 'Error fetching reviews' });
     }
+
+    // Fetch user data for each review using auth.admin API
+    const reviewsWithUsers = await Promise.all(
+      (reviews || []).map(async (review) => {
+        try {
+          const { data: userData, error: userError } = await supabase.auth.admin.getUserById(review.user_id);
+          
+          if (userError || !userData) {
+            // If user not found, return review without user data
+            return {
+              ...review,
+              user: {
+                email: null,
+                name: null
+              }
+            };
+          }
+
+          return {
+            ...review,
+            user: {
+              email: userData.user?.email || null,
+              name: userData.user?.user_metadata?.full_name || userData.user?.user_metadata?.name || null
+            }
+          };
+        } catch (err) {
+          console.error(`Error fetching user ${review.user_id}:`, err);
+          // Return review without user data on error
+          return {
+            ...review,
+            user: {
+              email: null,
+              name: null
+            }
+          };
+        }
+      })
+    );
 
     // Get average rating
     const { data: ratingStats } = await supabase
@@ -47,7 +80,7 @@ const getProductReviews = async (req, res) => {
     };
 
     res.json({
-      reviews: reviews || [],
+      reviews: reviewsWithUsers,
       summary: {
         totalReviews,
         averageRating: parseFloat(averageRating.toFixed(1)),

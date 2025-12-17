@@ -133,15 +133,25 @@ const addToCart = async (req, res) => {
     // Upsert cart item
     // Note: carts table doesn't have variant_id column yet, so variant info is not stored
     // Multiple variants of the same product will be combined (limitation for now)
-    const { data, error } = await supabase
+    const { data: upsertData, error: upsertError } = await supabase
       .from('carts')
       .upsert({
         user_id: userId,
         product_id: productId,
-        quantity: requestedQuantity
+        quantity: requestedQuantity,
+        updated_at: new Date().toISOString()
       }, {
         onConflict: 'user_id,product_id'
-      })
+      });
+
+    if (upsertError) {
+      console.error('Error upserting cart item:', upsertError);
+      return res.status(500).json({ message: 'Error adding to cart', error: upsertError.message });
+    }
+
+    // Fetch the updated/inserted cart item with product details
+    const { data, error } = await supabase
+      .from('carts')
       .select(`
         *,
         products (
@@ -152,11 +162,13 @@ const addToCart = async (req, res) => {
           stock_quantity
         )
       `)
+      .eq('user_id', userId)
+      .eq('product_id', productId)
       .single();
 
     if (error) {
-      console.error('Error adding to cart:', error);
-      return res.status(500).json({ message: 'Error adding to cart' });
+      console.error('Error fetching cart item after upsert:', error);
+      return res.status(500).json({ message: 'Error fetching cart item', error: error.message });
     }
 
     res.json(data);
