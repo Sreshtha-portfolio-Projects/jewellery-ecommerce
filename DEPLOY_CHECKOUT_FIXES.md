@@ -5,9 +5,13 @@ This guide fixes ALL checkout-related issues including:
 - ✅ Cart operations (add to cart, update quantity)
 - ✅ Address creation/management
 - ✅ Review system
-- ✅ Order intent creation
+- ✅ Order intent creation (CRITICAL FIX: Cart-Variant join issue)
 - ✅ Inventory locking
 - ✅ Stock management
+
+## Latest Fix (CRITICAL)
+**Issue**: "Could not find a relationship between 'carts' and 'product_variants'"
+**Solution**: Removed direct join, fetch variants separately based on product_id
 
 ## Prerequisites
 - Access to Supabase SQL Editor

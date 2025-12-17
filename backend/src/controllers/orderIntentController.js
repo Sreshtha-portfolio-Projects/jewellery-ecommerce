@@ -20,13 +20,12 @@ const createOrderIntent = async (req, res) => {
       });
     }
 
-    // Get user's cart
+    // Get user's cart (without variant join since carts table doesn't have variant_id FK)
     const { data: cartItems, error: cartError } = await supabase
       .from('carts')
       .select(`
         *,
-        product:products(*),
-        variant:product_variants(*)
+        product:products(*)
       `)
       .eq('user_id', userId);
 
@@ -42,15 +41,42 @@ const createOrderIntent = async (req, res) => {
 
     console.log('Cart items found:', cartItems.length, 'for user:', userId);
 
+    // Fetch variants separately for items that might have them
+    // Note: Cart items don't store variant_id, so we check if products have variants
+    const productIds = cartItems.map(item => item.product_id).filter(Boolean);
+    const { data: variants } = await supabase
+      .from('product_variants')
+      .select('*')
+      .in('product_id', productIds);
+
+    // Create a map of variants by product_id
+    const variantsByProduct = {};
+    (variants || []).forEach(v => {
+      if (!variantsByProduct[v.product_id]) {
+        variantsByProduct[v.product_id] = [];
+      }
+      variantsByProduct[v.product_id].push(v);
+    });
+
+    // Attach variant data to cart items (if product has variants, use first active one)
+    cartItems.forEach(item => {
+      const productVariants = variantsByProduct[item.product_id];
+      if (productVariants && productVariants.length > 0) {
+        // Use first active variant or just first variant
+        item.variant = productVariants.find(v => v.is_active) || productVariants[0];
+        item.variant_id = item.variant.id;
+      }
+    });
+
     // Revalidate cart
     const validation = await cartRevalidationService.revalidateCart(
       cartItems.map(item => ({
         ...item,
-        variant_id: item.variant_id || item.variant?.id,
+        variant_id: item.variant_id, // May be null for products without variants
         product_id: item.product_id,
         quantity: item.quantity,
         product: item.product,
-        variant: item.variant
+        variant: item.variant || null
       })),
       discountCode
     );
