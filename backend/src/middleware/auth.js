@@ -19,38 +19,66 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
+// Helper function to check if user is admin (checks database)
+const checkIsAdmin = async (userId) => {
+  try {
+    const supabase = require('../config/supabase');
+    
+    // Check user_roles table for admin role
+    const { data: roleData, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .single();
+    
+    if (!roleError && roleData) {
+      return true;
+    }
+    
+    // Fallback: Check JWT token role (for backward compatibility during migration)
+    // Also check user metadata and ALLOWED_ADMIN_EMAILS for migration period
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+    
+    if (userError || !userData) {
+      return false;
+    }
+    
+    // Legacy checks (for backward compatibility)
+    const role = userData.user?.user_metadata?.role || 'customer';
+    const email = userData.user?.email?.toLowerCase() || '';
+    const allowedAdminEmails = process.env.ALLOWED_ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || [];
+    
+    return role === 'admin' || 
+           email.includes('admin') || 
+           allowedAdminEmails.includes(email);
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
+  }
+};
+
 // Middleware to check if user is admin
-// In production, you'd check a user role table or metadata
+// Checks database user_roles table first, then falls back to legacy methods
 const requireAdmin = async (req, res, next) => {
   try {
-    // First check JWT token role (most efficient)
+    // First check JWT token role (cached, most efficient)
     if (req.user.role === 'admin') {
       req.user.isAdmin = true;
       return next();
     }
 
-    // Fallback: Check Supabase user metadata if role not in JWT
-    const supabase = require('../config/supabase');
-    const { data: userData, error } = await supabase.auth.admin.getUserById(req.user.userId);
-    
-    if (error || !userData) {
-      return res.status(403).json({ message: 'Admin access required' });
-    }
-
-    // Check user metadata for admin role
-    const role = userData.user?.user_metadata?.role || 'customer';
-    const email = userData.user?.email?.toLowerCase() || '';
-    const allowedAdminEmails = process.env.ALLOWED_ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || [];
-    
-    const isAdmin = role === 'admin' || 
-                   email.includes('admin') || 
-                   allowedAdminEmails.includes(email);
+    // Check database for admin role
+    const isAdmin = await checkIsAdmin(req.user.userId);
     
     if (!isAdmin) {
-      return res.status(403).json({ message: 'Admin access required' });
+      return res.status(403).json({ 
+        message: 'Admin access required. Contact an administrator to grant you admin privileges.' 
+      });
     }
 
     req.user.isAdmin = true;
+    req.user.role = 'admin'; // Update role in request for future checks
     next();
   } catch (error) {
     console.error('Admin check error:', error);

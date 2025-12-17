@@ -22,6 +22,7 @@ const adminPricingRoutes = require('./routes/adminPricingRoutes');
 const orderIntentRoutes = require('./routes/orderIntentRoutes');
 const adminSettingsRoutes = require('./routes/adminSettingsRoutes');
 const adminInventoryRoutes = require('./routes/adminInventoryRoutes');
+const adminUserRoutes = require('./routes/adminUserRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const { cartActivityRouter, adminAbandonedCartRouter } = require('./routes/abandonedCartRoutes');
 
@@ -121,6 +122,7 @@ app.use('/api/admin/products', adminProductRoutes);
 app.use('/api/admin/pricing-rules', adminPricingRoutes);
 app.use('/api/admin/settings', adminSettingsRoutes);
 app.use('/api/admin/inventory', adminInventoryRoutes);
+app.use('/api/admin/users', adminUserRoutes);
 app.use('/api/admin', adminAbandonedCartRouter);
 app.use('/api/order-intents', orderIntentRoutes);
 app.use('/api/payments', paymentRoutes);

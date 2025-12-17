@@ -20,43 +20,47 @@ const login = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Verify admin role
-    let role = authData.user.user_metadata?.role || 'customer';
-    const userEmail = authData.user.email?.toLowerCase() || '';
-    
-    // Check for admin: role in metadata, email contains 'admin', or email in allowed list
-    const allowedAdminEmails = process.env.ALLOWED_ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || [];
-    let isAdmin = role === 'admin' || userEmail.includes('admin') || allowedAdminEmails.includes(userEmail);
+    // Check admin role in database (user_roles table)
+    const { data: roleData, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', authData.user.id)
+      .eq('role', 'admin')
+      .single();
 
-    // If user is in allowed list but doesn't have admin role, update their metadata
-    if (!isAdmin && allowedAdminEmails.includes(userEmail)) {
-      try {
-        const { error: updateError } = await supabase.auth.admin.updateUserById(
-          authData.user.id,
-          {
-            user_metadata: {
-              ...authData.user.user_metadata,
-              role: 'admin'
-            }
+    let isAdmin = !roleError && roleData;
+
+    // Fallback: Legacy checks for backward compatibility during migration
+    if (!isAdmin) {
+      let role = authData.user.user_metadata?.role || 'customer';
+      const userEmail = authData.user.email?.toLowerCase() || '';
+      const allowedAdminEmails = process.env.ALLOWED_ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || [];
+      
+      isAdmin = role === 'admin' || userEmail.includes('admin') || allowedAdminEmails.includes(userEmail);
+      
+      // If user qualifies via legacy method, automatically grant admin role in database
+      if (isAdmin) {
+        try {
+          const { error: insertError } = await supabase
+            .from('user_roles')
+            .insert({
+              user_id: authData.user.id,
+              role: 'admin',
+              notes: 'Auto-granted via legacy admin check (migration)'
+            });
+          
+          if (insertError && !insertError.message.includes('duplicate')) {
+            console.error('Error auto-granting admin role:', insertError);
           }
-        );
-        if (!updateError) {
-          role = 'admin';
-          isAdmin = true;
+        } catch (err) {
+          console.error('Error auto-granting admin role:', err);
         }
-      } catch (err) {
-        console.error('Error updating user metadata:', err);
       }
     }
 
     if (!isAdmin) {
-      console.log('Admin check failed:', { 
-        email: authData.user.email, 
-        role, 
-        user_metadata: authData.user.user_metadata 
-      });
       return res.status(403).json({ 
-        message: 'Admin access required. Your email must contain "admin", be in ALLOWED_ADMIN_EMAILS, or your account must have role="admin" in user metadata.' 
+        message: 'Admin access required. Contact an administrator to grant you admin privileges, or use the Supabase Dashboard to manually add your user ID to the user_roles table.' 
       });
     }
 

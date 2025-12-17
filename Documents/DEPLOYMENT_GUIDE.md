@@ -91,7 +91,9 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 # JWT Configuration
 JWT_SECRET=your-production-jwt-secret-min-32-characters-long-and-random
 
-# Admin Configuration
+# Admin Configuration (Optional - Legacy support)
+# Note: Admin users are now managed via database (user_roles table)
+# You can still use this for initial setup, but it's recommended to use the database method
 ALLOWED_ADMIN_EMAILS=admin@yourdomain.com,another-admin@yourdomain.com
 
 # Razorpay Configuration (Test Mode - we'll update to live later)
@@ -114,6 +116,7 @@ FRONTEND_URL=https://your-frontend.vercel.app
   ```
 - ⚠️ **PORT**: Render automatically sets `PORT`, but you can use `10000` as default
 - ⚠️ **RAZORPAY_WEBHOOK_SECRET**: Leave this for now, we'll configure webhooks in Phase 2
+- ⚠️ **ALLOWED_ADMIN_EMAILS**: Optional - Admin users are now managed via database. See "Setting Up Your First Admin" section below.
 
 #### Step 4: Deploy Backend
 
@@ -137,6 +140,18 @@ FRONTEND_URL=https://your-frontend.vercel.app
    Should show Swagger UI.
 
 ✅ **Backend is deployed!** Save your backend URL - you'll need it for frontend configuration.
+
+**Important**: The admin panel is part of the frontend application, so it will be deployed automatically when you deploy the frontend. No separate deployment is needed.
+
+**⚠️ Important: Run Admin Roles Migration**
+
+Before you can access the admin panel, you need to run the admin roles migration:
+
+1. Go to **Supabase Dashboard → SQL Editor**
+2. Run the migration: `migrations/supabase-admin-roles.sql`
+3. This creates the `user_roles` table for managing admin users
+
+**Note**: If you haven't run this migration yet, do it now. The admin panel won't work without it.
 
 ---
 
@@ -188,6 +203,50 @@ VITE_API_BASE_URL=https://your-backend-name.onrender.com
 3. **Check deployment logs** for any errors
 4. **Note your frontend URL**: `https://your-project-name.vercel.app`
 
+**✅ Your Admin Panel is Now Live!**
+
+The admin panel is automatically deployed as part of your frontend. Access it at:
+- **Admin Login**: `https://your-project-name.vercel.app/admin/login`
+- **Admin Dashboard**: `https://your-project-name.vercel.app/admin/dashboard` (after login)
+
+**Admin Panel Features:**
+- Dashboard with KPIs and analytics
+- Product management (add, edit, delete, bulk operations)
+- Order management
+- Customer management
+- Discount codes and pricing rules
+- Abandoned cart recovery
+- Settings and configuration
+
+**To Access Admin Panel:**
+1. Visit `https://your-project-name.vercel.app/admin/login`
+2. Login with an admin account (see "Setting Up Your First Admin" below)
+3. You'll be redirected to the admin dashboard
+
+**Setting Up Your First Admin:**
+
+After deployment, you need to create your first admin user. You have two options:
+
+**Option 1: Using Supabase Dashboard (Recommended)**
+1. Go to Supabase Dashboard → Authentication → Users
+2. Create a new user or use an existing user
+3. Note the user's ID (UUID)
+4. Go to Supabase Dashboard → SQL Editor
+5. Run this SQL (replace `USER_ID_HERE` with the actual user ID):
+   ```sql
+   INSERT INTO user_roles (user_id, role, notes)
+   VALUES ('USER_ID_HERE', 'admin', 'Initial admin user');
+   ```
+6. Now you can login at `/admin/login` with that user's email and password
+
+**Option 2: Using API (After first admin is created)**
+1. First create an admin using Option 1
+2. Login to admin panel
+3. Go to Admin Settings → Users
+4. Grant admin role to other users via the UI
+
+**Note**: The `ALLOWED_ADMIN_EMAILS` environment variable still works for backward compatibility, but using the database method is recommended as it's more flexible and doesn't require redeployment to add/remove admins.
+
 #### Step 5: Update Backend CORS (if needed)
 
 If you get CORS errors, update your backend environment variables on Render:
@@ -231,6 +290,11 @@ Then **redeploy** the backend service on Render (click "Manual Deploy" → "Depl
    - Update quantities
    - Remove items
 
+7. **✅ Admin Panel access:**
+   - Visit `https://your-project-name.vercel.app/admin/login`
+   - Login with admin credentials (email must be in `ALLOWED_ADMIN_EMAILS`)
+   - Should redirect to admin dashboard
+
 ⚠️ **Note**: Payment won't work yet - we'll configure that in Phase 2.
 
 ---
@@ -238,6 +302,16 @@ Then **redeploy** the backend service on Render (click "Manual Deploy" → "Depl
 ## Phase 2: Webhooks & Integrations
 
 Now that your app is live, let's add payment webhooks. Custom domains and Cloudflare are optional and can be added later if needed.
+
+**Admin Panel URLs:**
+- **Admin Login**: `https://your-project-name.vercel.app/admin/login`
+- **Admin Dashboard**: `https://your-project-name.vercel.app/admin/dashboard`
+- **Admin Products**: `https://your-project-name.vercel.app/admin/products`
+- **Admin Orders**: `https://your-project-name.vercel.app/admin/orders`
+- **Admin Analytics**: `https://your-project-name.vercel.app/admin/analytics`
+- **Admin Settings**: `https://your-project-name.vercel.app/admin/settings`
+
+All admin routes are protected and require authentication with an admin email.
 
 ### 2.1 Configure Razorpay Webhooks
 
@@ -464,6 +538,8 @@ Cloudflare provides:
 - [ ] ✅ Test user registration and login
 - [ ] ✅ Test product browsing and cart
 - [ ] ✅ Test checkout and payment flow
+- [ ] ✅ Test admin panel login and access
+- [ ] ✅ Test admin features (products, orders, analytics)
 - [ ] ✅ Test webhook delivery (check Razorpay dashboard)
 - [ ] ✅ Test on mobile devices
 - [ ] ✅ Test with different browsers
@@ -516,6 +592,73 @@ After completing deployment:
 - **Render Docs**: [render.com/docs](https://render.com/docs)
 - **Razorpay Docs**: [razorpay.com/docs](https://razorpay.com/docs)
 - **Supabase Docs**: [supabase.com/docs](https://supabase.com/docs)
+
+---
+
+## 📍 Quick Reference: Your Deployment URLs
+
+After deployment, here are all your important URLs:
+
+### Frontend (Customer-Facing)
+- **Homepage**: `https://your-project-name.vercel.app`
+- **Products**: `https://your-project-name.vercel.app/products`
+- **Cart**: `https://your-project-name.vercel.app/cart`
+- **Checkout**: `https://your-project-name.vercel.app/checkout`
+- **Customer Login**: `https://your-project-name.vercel.app/login`
+- **Customer Signup**: `https://your-project-name.vercel.app/signup`
+
+### Admin Panel
+- **Admin Login**: `https://your-project-name.vercel.app/admin/login`
+- **Admin Dashboard**: `https://your-project-name.vercel.app/admin/dashboard`
+- **Admin Products**: `https://your-project-name.vercel.app/admin/products`
+- **Admin Orders**: `https://your-project-name.vercel.app/admin/orders`
+- **Admin Analytics**: `https://your-project-name.vercel.app/admin/analytics`
+- **Admin Customers**: `https://your-project-name.vercel.app/admin/customers`
+- **Admin Settings**: `https://your-project-name.vercel.app/admin/settings`
+
+**Note**: Replace `your-project-name` with your actual Vercel project name.
+
+### Backend API
+- **Health Check**: `https://your-backend-name.onrender.com/health`
+- **API Documentation**: `https://your-backend-name.onrender.com/api-docs`
+- **Webhook Endpoint**: `https://your-backend-name.onrender.com/api/payments/webhook`
+
+**Note**: Replace `your-backend-name` with your actual Render service name.
+
+### Admin Access Requirements
+To access the admin panel, you need:
+1. A user account created in Supabase (Authentication → Users)
+2. Admin role granted in the `user_roles` database table
+3. Login credentials (email and password)
+
+**How to Grant Admin Access:**
+
+**Method 1: Via Supabase SQL Editor (Initial Setup)**
+```sql
+-- Replace 'USER_ID_HERE' with the actual user UUID from auth.users table
+INSERT INTO user_roles (user_id, role, notes)
+VALUES ('USER_ID_HERE', 'admin', 'Initial admin user');
+```
+
+**Method 2: Via Admin Panel (After First Admin is Created)**
+1. Login as an existing admin
+2. Navigate to Admin Settings → Users
+3. Find the user and click "Grant Admin Role"
+
+**Method 3: Via API (Programmatic)**
+```bash
+POST /api/admin/users/{userId}/roles/admin
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  "notes": "Optional notes"
+}
+```
+
+**Legacy Method (Still Supported):**
+- Add email to `ALLOWED_ADMIN_EMAILS` environment variable (requires redeployment)
+- Or set `role: 'admin'` in user metadata via Supabase Dashboard
 
 ---
 
