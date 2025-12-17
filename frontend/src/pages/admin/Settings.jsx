@@ -158,7 +158,6 @@ const Settings = () => {
               <SettingInput
                 key={key}
                 category={category}
-                key={key}
                 setting={settings[category][key]}
               />
             ))}
