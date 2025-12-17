@@ -36,7 +36,7 @@ const corsOptions = {
     // Allow requests with no origin (like mobile apps, Postman, or same-origin requests)
     if (!origin) return callback(null, true);
     
-    // List of allowed origins
+    // Build list of allowed origins
     const allowedOrigins = [
       'http://localhost:5173',
       'http://localhost:3000',
@@ -46,14 +46,29 @@ const corsOptions = {
       'https://valo.buy.com'
     ];
     
-    // Check if origin is in allowed list
-    if (allowedOrigins.includes(origin)) {
+    // Add frontend URLs from environment variable (comma-separated)
+    const frontendUrls = process.env.FRONTEND_URL || '';
+    if (frontendUrls) {
+      frontendUrls.split(',').forEach(url => {
+        const trimmedUrl = url.trim();
+        if (trimmedUrl && !allowedOrigins.includes(trimmedUrl)) {
+          allowedOrigins.push(trimmedUrl);
+        }
+      });
+    }
+    
+    // Allow any Vercel deployment (*.vercel.app)
+    const isVercelOrigin = origin.endsWith('.vercel.app');
+    
+    // Check if origin is in allowed list or is a Vercel origin
+    if (allowedOrigins.includes(origin) || isVercelOrigin) {
       callback(null, true);
     } else {
       // In development, allow all origins
       if (process.env.NODE_ENV !== 'production') {
         callback(null, true);
       } else {
+        console.warn(`CORS blocked origin: ${origin}. Allowed origins: ${allowedOrigins.join(', ')}`);
         callback(new Error('Not allowed by CORS'));
       }
     }

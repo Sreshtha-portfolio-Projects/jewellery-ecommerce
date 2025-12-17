@@ -249,13 +249,29 @@ After deployment, you need to create your first admin user. You have two options
 
 #### Step 5: Update Backend CORS (if needed)
 
-If you get CORS errors, update your backend environment variables on Render:
+**Good News**: The backend now automatically allows all `*.vercel.app` domains, so your Vercel frontend should work without additional configuration!
+
+However, if you're using a custom domain or want to be explicit, you can set:
 
 ```env
 FRONTEND_URL=https://your-project-name.vercel.app
 ```
 
-Then **redeploy** the backend service on Render (click "Manual Deploy" → "Deploy latest commit").
+Or for multiple frontend URLs (comma-separated):
+```env
+FRONTEND_URL=https://your-project-name.vercel.app,https://custom-domain.com
+```
+
+**If you're still getting CORS errors:**
+1. Make sure you've deployed the latest backend code (with the updated CORS configuration)
+2. Set `FRONTEND_URL` in Render environment variables if using custom domain
+3. **Redeploy** the backend service on Render (click "Manual Deploy" → "Deploy latest commit")
+4. Clear your browser cache and try again
+
+**Note**: The backend automatically allows:
+- All `*.vercel.app` domains (any Vercel deployment)
+- Localhost in development
+- Any origin specified in `FRONTEND_URL` environment variable
 
 ---
 
