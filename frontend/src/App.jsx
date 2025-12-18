@@ -30,6 +30,7 @@ import AdminProducts from './pages/admin/Products';
 import ProductForm from './pages/admin/ProductForm';
 import BulkOperations from './pages/admin/BulkOperations';
 import AdminOrders from './pages/admin/Orders';
+import AdminOrderDetail from './pages/admin/OrderDetail';
 import AdminAnalytics from './pages/admin/Analytics';
 import AdminDiscounts from './pages/admin/Discounts';
 import AdminPricingRules from './pages/admin/PricingRules';
@@ -176,6 +177,7 @@ function App() {
           <Route path="products/:id" element={<ProductForm />} />
           <Route path="products/bulk" element={<BulkOperations />} />
           <Route path="orders" element={<AdminOrders />} />
+          <Route path="orders/:id" element={<AdminOrderDetail />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="discounts" element={<AdminDiscounts />} />
           <Route path="pricing-rules" element={<AdminPricingRules />} />

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
 
 const Orders = () => {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -156,14 +158,12 @@ const Orders = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex gap-2">
-                          <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                            View
-                          </button>
-                          <button className="text-rose-600 hover:text-rose-800 text-sm font-medium">
-                            Edit
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => navigate(`/admin/orders/${order.id}`)}
+                          className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        >
+                          View Details
+                        </button>
                       </td>
                     </tr>
                   ))

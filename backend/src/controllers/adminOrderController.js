@@ -107,6 +107,32 @@ const getOrderDetails = async (req, res) => {
       .eq('order_id', id)
       .order('created_at', { ascending: true });
 
+    // Get shipping status history
+    const { data: shippingHistory } = await supabase
+      .from('shipping_status_history')
+      .select(`
+        *,
+        updated_by_user:auth.users!updated_by (
+          id,
+          email
+        )
+      `)
+      .eq('order_id', id)
+      .order('created_at', { ascending: true });
+
+    // Format shipping history
+    const formattedShippingHistory = (shippingHistory || []).map(item => ({
+      id: item.id,
+      from_status: item.from_status,
+      to_status: item.to_status,
+      notes: item.notes,
+      courier_name: item.courier_name,
+      tracking_number: item.tracking_number,
+      updated_by: item.updated_by,
+      updated_by_email: item.updated_by_user?.email || 'N/A',
+      created_at: item.created_at
+    }));
+
     // Get user email
     const { data: userData } = await supabase.auth.admin.getUserById(order.user_id);
     const customerEmail = userData?.user?.email || 'N/A';
@@ -114,7 +140,8 @@ const getOrderDetails = async (req, res) => {
     res.json({
       ...order,
       customerEmail,
-      statusHistory: statusHistory || []
+      statusHistory: statusHistory || [],
+      shippingHistory: formattedShippingHistory
     });
   } catch (error) {
     console.error('Error in getOrderDetails:', error);

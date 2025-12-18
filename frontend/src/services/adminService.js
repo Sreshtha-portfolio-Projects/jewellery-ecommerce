@@ -194,4 +194,39 @@ export const adminService = {
     const response = await api.get('/admin/abandoned-carts/stats');
     return response.data;
   },
+
+  // Shipping Management
+  updateShippingStatus: async (orderId, status, notes) => {
+    const response = await api.post(`/admin/orders/${orderId}/shipping/status`, { status, notes });
+    return response.data;
+  },
+
+  createShipment: async (orderId, courierName, trackingNumber, notes) => {
+    const response = await api.post(`/admin/orders/${orderId}/shipping/create`, {
+      courier_name: courierName,
+      tracking_number: trackingNumber,
+      notes
+    });
+    return response.data;
+  },
+
+  updateShipmentDetails: async (orderId, courierName, trackingNumber, notes, reason) => {
+    const response = await api.put(`/admin/orders/${orderId}/shipping/details`, {
+      courier_name: courierName,
+      tracking_number: trackingNumber,
+      notes,
+      reason
+    });
+    return response.data;
+  },
+
+  getShippingHistory: async (orderId) => {
+    const response = await api.get(`/admin/orders/${orderId}/shipping/history`);
+    return response.data;
+  },
+
+  getNextValidStatuses: async (orderId) => {
+    const response = await api.get(`/admin/orders/${orderId}/shipping/next-statuses`);
+    return response.data;
+  },
 };

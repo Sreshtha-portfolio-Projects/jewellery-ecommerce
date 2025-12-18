@@ -384,6 +384,13 @@ const getOrderById = async (req, res) => {
       amount: parseFloat(order.total_amount || 0)
     };
 
+    // Get shipping status history (customer-facing, no admin emails)
+    const { data: shippingHistory } = await supabase
+      .from('shipping_status_history')
+      .select('from_status, to_status, notes, courier_name, tracking_number, created_at')
+      .eq('order_id', id)
+      .order('created_at', { ascending: true });
+
     // Format shipping details
     const shippingDetails = {
       status: order.shipment_status || 'NOT_SHIPPED',
@@ -391,7 +398,15 @@ const getOrderById = async (req, res) => {
       tracking_number: order.tracking_number || null,
       shipped_at: order.shipment_created_at || null,
       last_updated: order.shipment_updated_at || null,
-      estimated_delivery: estimatedDelivery
+      estimated_delivery: estimatedDelivery,
+      history: (shippingHistory || []).map(item => ({
+        from_status: item.from_status,
+        to_status: item.to_status,
+        notes: item.notes,
+        courier_name: item.courier_name,
+        tracking_number: item.tracking_number,
+        created_at: item.created_at
+      }))
     };
 
     // Format response
@@ -564,13 +579,22 @@ const getOrderStatusTimeline = (orderStatus, shipmentStatus, paymentStatus, orde
     statuses[1].timestamp = orderCreatedAt; // Payment happens at order creation for online orders
   }
 
-  // Map order status to timeline
-  if (orderStatus === 'paid' || orderStatus === 'pending' || orderStatus === 'PAYMENT_PENDING') {
+  // Map shipping status to timeline (using shipment_status as source of truth)
+  if (shipmentStatus === 'PROCESSING') {
+    // Order is being processed
+    if (paymentStatus === 'paid') {
+      statuses[1].completed = true;
+    }
+    statuses[2].completed = true;
+    statuses[2].inProgress = true;
+  } else if (orderStatus === 'paid' || orderStatus === 'pending' || orderStatus === 'PAYMENT_PENDING') {
     // Order is paid/pending - processing
     if (paymentStatus === 'paid') {
       statuses[1].completed = true;
     }
-    statuses[2].inProgress = true;
+    if (shipmentStatus === 'NOT_SHIPPED' || !shipmentStatus) {
+      statuses[2].inProgress = true;
+    }
   } else if (orderStatus === 'shipped' || shipmentStatus === 'SHIPPED') {
     // Order is shipped
     statuses[1].completed = true;
@@ -579,7 +603,15 @@ const getOrderStatusTimeline = (orderStatus, shipmentStatus, paymentStatus, orde
     statuses[3].completed = true;
     statuses[3].inProgress = true;
     statuses[3].timestamp = shipmentUpdatedAt || orderCreatedAt;
-  } else if (shipmentStatus === 'IN_TRANSIT' || shipmentStatus === 'OUT_FOR_DELIVERY') {
+  } else if (shipmentStatus === 'IN_TRANSIT') {
+    // Order is in transit
+    statuses[1].completed = true;
+    statuses[2].completed = true;
+    statuses[2].inProgress = false;
+    statuses[3].completed = true;
+    statuses[3].inProgress = true;
+    statuses[3].timestamp = shipmentUpdatedAt || orderCreatedAt;
+  } else if (shipmentStatus === 'OUT_FOR_DELIVERY') {
     // Order is out for delivery
     statuses[1].completed = true;
     statuses[2].completed = true;
@@ -601,7 +633,9 @@ const getOrderStatusTimeline = (orderStatus, shipmentStatus, paymentStatus, orde
     if (paymentStatus === 'paid') {
       statuses[1].completed = true;
     }
-    statuses[2].inProgress = true;
+    if (shipmentStatus === 'NOT_SHIPPED' || !shipmentStatus) {
+      statuses[2].inProgress = true;
+    }
   }
 
   return statuses;

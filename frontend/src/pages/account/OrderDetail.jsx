@@ -479,28 +479,73 @@ const OrderDetail = () => {
             {/* Shipping & Delivery Tracking */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">Shipping & Delivery</h2>
-              {shipping.status === 'NOT_SHIPPED' || !shipping.status ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-600 font-medium">Your order is being prepared for shipment</p>
-                  <p className="text-sm text-gray-500 mt-2">We'll update you once your order is shipped</p>
+              
+              {/* Shipping Status Badge */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-gray-600">Current Status</span>
+                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                    shipping.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
+                    shipping.status === 'OUT_FOR_DELIVERY' ? 'bg-blue-100 text-blue-800' :
+                    shipping.status === 'IN_TRANSIT' ? 'bg-purple-100 text-purple-800' :
+                    shipping.status === 'SHIPPED' ? 'bg-indigo-100 text-indigo-800' :
+                    shipping.status === 'PROCESSING' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {shipping.status ? shipping.status.replace(/_/g, ' ') : 'Not Shipped'}
+                  </span>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Delivery Status</span>
-                    <span className={`font-semibold capitalize ${
-                      shipping.status === 'DELIVERED' ? 'text-green-600' : 
-                      shipping.status === 'SHIPPED' || shipping.status === 'IN_TRANSIT' ? 'text-blue-600' : 
-                      'text-gray-600'
-                    }`}>
-                      {shipping.status.replace('_', ' ')}
-                    </span>
+                {shipping.status && shipping.status !== 'NOT_SHIPPED' && (
+                  <p className="text-sm text-gray-600 mt-2">
+                    {shipping.status === 'PROCESSING' && 'Your jewellery is being carefully prepared and quality-checked.'}
+                    {shipping.status === 'SHIPPED' && 'Your jewellery has been shipped and is on its way.'}
+                    {shipping.status === 'IN_TRANSIT' && 'Your jewellery is in transit and will reach you soon.'}
+                    {shipping.status === 'OUT_FOR_DELIVERY' && 'Your jewellery is out for delivery and will arrive today.'}
+                    {shipping.status === 'DELIVERED' && 'Your jewellery has been delivered successfully.'}
+                  </p>
+                )}
+              </div>
+
+              {/* Shipping Timeline */}
+              {shipping.history && shipping.history.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Shipping Timeline</h3>
+                  <div className="space-y-4">
+                    {shipping.history.map((entry, index) => (
+                      <div key={index} className="flex items-start gap-4">
+                        <div className="flex-shrink-0 mt-1">
+                          <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        </div>
+                        <div className="flex-1 pb-4 border-b border-gray-200 last:border-0">
+                          <p className="font-semibold text-gray-900">
+                            {entry.to_status ? entry.to_status.replace(/_/g, ' ') : 'Status Updated'}
+                          </p>
+                          {entry.notes && (
+                            <p className="text-sm text-gray-600 mt-1">{entry.notes}</p>
+                          )}
+                          {entry.courier_name && (
+                            <p className="text-sm text-gray-500 mt-1">Courier: {entry.courier_name}</p>
+                          )}
+                          {entry.tracking_number && (
+                            <p className="text-sm text-gray-500 mt-1">Tracking: {entry.tracking_number}</p>
+                          )}
+                          <p className="text-xs text-gray-400 mt-1">
+                            {formatDate(entry.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                </div>
+              )}
+
+              {/* Shipping Details */}
+              {shipping.status && shipping.status !== 'NOT_SHIPPED' ? (
+                <div className="space-y-3 pt-4 border-t border-gray-200">
                   {shipping.courier_name && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Courier</span>
@@ -508,11 +553,18 @@ const OrderDetail = () => {
                     </div>
                   )}
                   {shipping.tracking_number && (
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-gray-600">Tracking Number</span>
-                      <span className="font-mono text-sm text-rose-600 hover:text-rose-700 cursor-pointer">
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(shipping.tracking_number);
+                          // You could add a toast notification here
+                        }}
+                        className="font-mono text-sm text-rose-600 hover:text-rose-700 cursor-pointer hover:underline"
+                        title="Click to copy"
+                      >
                         {shipping.tracking_number}
-                      </span>
+                      </button>
                     </div>
                   )}
                   {shipping.shipped_at && (
@@ -521,12 +573,28 @@ const OrderDetail = () => {
                       <span className="text-gray-900">{formatDate(shipping.shipped_at)}</span>
                     </div>
                   )}
+                  {shipping.last_updated && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Last Updated</span>
+                      <span className="text-gray-900">{formatDate(shipping.last_updated)}</span>
+                    </div>
+                  )}
                   {estimated_delivery && estimated_delivery.available && !estimated_delivery.delivered && (
                     <div className="flex justify-between pt-3 border-t border-gray-200">
-                      <span className="text-gray-600">Estimated Delivery</span>
+                      <span className="text-gray-600 font-semibold">Estimated Delivery</span>
                       <span className="font-semibold text-gray-900">{estimated_delivery.display}</span>
                     </div>
                   )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-600 font-medium">Your order is being prepared for shipment</p>
+                  <p className="text-sm text-gray-500 mt-2">We'll update you once your order is shipped</p>
                 </div>
               )}
             </div>
