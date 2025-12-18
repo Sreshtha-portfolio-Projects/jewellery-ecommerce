@@ -15,7 +15,7 @@ const Home = () => {
       <BestsellerProducts />
       
       {/* Promotional Banners */}
-      <div className="py-16 bg-white">
+      <div className="py-8 sm:py-12 md:py-16 bg-white">
         <PromotionalBanner
           image="https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=800"
           title="Jewelry That Tells Your Story in Sparkling Detail"
@@ -32,20 +32,20 @@ const Home = () => {
       </div>
 
       {/* Elevate Your Look Section */}
-      <section className="py-16 bg-beige-50">
-        <div className="container mx-auto px-4">
-          <div className="relative h-[500px] rounded-lg overflow-hidden">
+      <section className="py-8 sm:py-12 md:py-16 bg-beige-50">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="relative h-[300px] sm:h-[400px] md:h-[500px] rounded-lg overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-beige-100/90 to-transparent z-10"></div>
             <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=1200')] bg-cover bg-center"></div>
-            <div className="relative z-20 h-full flex items-center px-8 md:px-16">
+            <div className="relative z-20 h-full flex items-center px-4 sm:px-6 md:px-8 lg:px-16">
               <div className="max-w-2xl">
-                <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4 sm:mb-6">
                   Elevate Your Everyday Look with Stunning Jewelry
                 </h2>
-                <p className="text-lg text-gray-700 mb-8">
+                <p className="text-sm sm:text-base md:text-lg text-gray-700 mb-6 sm:mb-8">
                   Transform your daily style with our carefully selected pieces that blend sophistication with everyday wearability.
                 </p>
-                <button className="px-8 py-3 bg-rose-600 text-white rounded hover:bg-rose-700 transition-colors font-medium">
+                <button className="px-6 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base bg-rose-600 text-white rounded hover:bg-rose-700 active:bg-rose-800 transition-colors font-medium">
                   SHOP NOW
                 </button>
               </div>

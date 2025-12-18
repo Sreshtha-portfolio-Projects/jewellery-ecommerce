@@ -299,23 +299,23 @@ const Checkout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-beige-50 py-12">
-      <div className="container mx-auto px-4 max-w-6xl">
-        <h1 className="font-serif text-4xl font-bold text-gray-900 mb-8">Checkout</h1>
+    <div className="min-h-screen bg-beige-50 py-4 sm:py-6 md:py-12">
+      <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
+        <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-6 sm:mb-8">Checkout</h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
           {/* Left Column - Order Details */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Delivery Address */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="font-serif text-xl font-semibold text-gray-900 mb-4">Delivery Address</h2>
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+              <h2 className="font-serif text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Delivery Address</h2>
               
               {addresses.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-600 mb-4">No addresses found</p>
+                <div className="text-center py-6 sm:py-8">
+                  <p className="text-sm sm:text-base text-gray-600 mb-4">No addresses found</p>
                   <button
                     onClick={() => navigate('/account/addresses')}
-                    className="px-4 py-2 bg-rose-600 text-white rounded hover:bg-rose-700 transition-colors"
+                    className="px-4 py-2 text-sm sm:text-base bg-rose-600 text-white rounded hover:bg-rose-700 active:bg-rose-800 transition-colors"
                   >
                     Add Address
                   </button>
@@ -325,7 +325,7 @@ const Checkout = () => {
                   {addresses.map((address) => (
                     <label
                       key={address.id}
-                      className={`block p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                      className={`block p-3 sm:p-4 border-2 rounded-lg cursor-pointer transition-colors ${
                         selectedAddressId === address.id
                           ? 'border-rose-600 bg-rose-50'
                           : 'border-gray-200 hover:border-gray-300'
@@ -339,19 +339,19 @@ const Checkout = () => {
                         onChange={(e) => setSelectedAddressId(e.target.value)}
                         className="sr-only"
                       />
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="font-semibold text-gray-900">{address.full_name}</p>
-                          <p className="text-gray-600 text-sm mt-1">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-2 sm:gap-0">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm sm:text-base text-gray-900">{address.full_name}</p>
+                          <p className="text-gray-600 text-xs sm:text-sm mt-1 break-words">
                             {address.address_line1}, {address.address_line2}
                           </p>
-                          <p className="text-gray-600 text-sm">
+                          <p className="text-gray-600 text-xs sm:text-sm">
                             {address.city}, {address.state} - {address.pincode}
                           </p>
-                          <p className="text-gray-600 text-sm">Phone: {address.phone}</p>
+                          <p className="text-gray-600 text-xs sm:text-sm">Phone: {address.phone}</p>
                         </div>
                         {address.is_default && (
-                          <span className="px-2 py-1 bg-rose-100 text-rose-700 text-xs rounded-full">
+                          <span className="px-2 py-1 bg-rose-100 text-rose-700 text-xs rounded-full whitespace-nowrap">
                             Default
                           </span>
                         )}
@@ -360,7 +360,7 @@ const Checkout = () => {
                   ))}
                   <button
                     onClick={() => navigate('/account/addresses')}
-                    className="text-rose-600 hover:text-rose-700 text-sm font-medium"
+                    className="text-rose-600 hover:text-rose-700 text-xs sm:text-sm font-medium"
                   >
                     + Add New Address
                   </button>
@@ -369,36 +369,36 @@ const Checkout = () => {
             </div>
 
             {/* Payment Method */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="font-serif text-xl font-semibold text-gray-900 mb-4">Payment</h2>
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+              <h2 className="font-serif text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Payment</h2>
               
               <div className="space-y-3">
-                <label className="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-gray-300">
+                <label className="flex items-start sm:items-center p-3 sm:p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-gray-300">
                   <input
                     type="radio"
                     name="payment"
                     value="online"
                     defaultChecked
-                    className="mr-3"
+                    className="mr-3 mt-1 sm:mt-0"
                   />
                   <div>
-                    <p className="font-semibold text-gray-900">Online Payment</p>
-                    <p className="text-sm text-gray-600">Pay securely with Razorpay (Cards, UPI, Net Banking, Wallets)</p>
+                    <p className="font-semibold text-sm sm:text-base text-gray-900">Online Payment</p>
+                    <p className="text-xs sm:text-sm text-gray-600">Pay securely with Razorpay (Cards, UPI, Net Banking, Wallets)</p>
                   </div>
                 </label>
               </div>
             </div>
 
             {/* Order Items */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="font-serif text-xl font-semibold text-gray-900 mb-4">Order Items</h2>
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+              <h2 className="font-serif text-lg sm:text-xl font-semibold text-gray-900 mb-3 sm:mb-4">Order Items</h2>
               
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {cartItems.map((item) => {
                   const product = item.products || item;
                   return (
-                    <div key={item.id} className="flex gap-4">
-                      <div className="w-20 h-20 bg-beige-100 rounded-lg overflow-hidden flex-shrink-0">
+                    <div key={item.id} className="flex gap-3 sm:gap-4">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-beige-100 rounded-lg overflow-hidden flex-shrink-0">
                         {product.image_url ? (
                           <img
                             src={product.image_url}
@@ -407,16 +407,16 @@ const Checkout = () => {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-beige-400">
-                            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-8 h-8 sm:w-10 sm:h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                           </div>
                         )}
                       </div>
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">{product.name}</p>
-                        <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-                        <p className="text-gray-900 font-semibold mt-1">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm sm:text-base text-gray-900 line-clamp-2">{product.name}</p>
+                        <p className="text-xs sm:text-sm text-gray-600">Quantity: {item.quantity}</p>
+                        <p className="text-sm sm:text-base text-gray-900 font-semibold mt-1">
                           ₹{((parseFloat(product.price) || 0) * (item.quantity || 1)).toFixed(2)}
                         </p>
                       </div>
@@ -429,14 +429,14 @@ const Checkout = () => {
 
           {/* Right Column - Price Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
-              <h2 className="font-serif text-2xl font-semibold text-gray-900 mb-6">Price Summary</h2>
+            <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 sticky top-4">
+              <h2 className="font-serif text-xl sm:text-2xl font-semibold text-gray-900 mb-4 sm:mb-6">Price Summary</h2>
 
               {/* Coupon Code */}
-              <div className="mb-6">
+              <div className="mb-4 sm:mb-6">
                 {!appliedCoupon ? (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                       Coupon Code
                     </label>
                     <div className="flex gap-2">
@@ -445,25 +445,25 @@ const Checkout = () => {
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                         placeholder="Enter code"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+                        className="flex-1 px-2 sm:px-3 py-1.5 sm:py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
                       />
                       <button
                         onClick={handleApplyCoupon}
                         disabled={loading}
-                        className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50"
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm bg-rose-600 text-white rounded-lg hover:bg-rose-700 active:bg-rose-800 transition-colors disabled:opacity-50 whitespace-nowrap"
                       >
                         {loading ? '...' : 'Apply'}
                       </button>
                     </div>
                     {couponError && (
-                      <p className="text-red-600 text-sm mt-1">{couponError}</p>
+                      <p className="text-red-600 text-xs sm:text-sm mt-1">{couponError}</p>
                     )}
                   </div>
                 ) : (
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="p-2 sm:p-3 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-sm font-medium text-green-800">
+                        <p className="text-xs sm:text-sm font-medium text-green-800">
                           {appliedCoupon.code} Applied
                         </p>
                         <p className="text-xs text-green-600">
@@ -474,7 +474,7 @@ const Checkout = () => {
                       </div>
                       <button
                         onClick={handleRemoveCoupon}
-                        className="text-green-700 hover:text-green-900 text-sm"
+                        className="text-green-700 hover:text-green-900 text-xs sm:text-sm"
                       >
                         Remove
                       </button>
@@ -484,31 +484,31 @@ const Checkout = () => {
               </div>
 
               {/* Price Breakdown */}
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-gray-700">
+              <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
+                <div className="flex justify-between text-xs sm:text-sm text-gray-700">
                   <span>Item Total</span>
                   <span>₹{priceBreakdown.subtotal.toFixed(2)}</span>
                 </div>
                 
                 {priceBreakdown.discount > 0 && (
-                  <div className="flex justify-between text-green-600">
+                  <div className="flex justify-between text-xs sm:text-sm text-green-600">
                     <span>Discount</span>
                     <span>-₹{priceBreakdown.discount.toFixed(2)}</span>
                   </div>
                 )}
                 
-                <div className="flex justify-between text-gray-700">
+                <div className="flex justify-between text-xs sm:text-sm text-gray-700">
                   <span>Tax (GST 18%)</span>
                   <span>₹{priceBreakdown.tax.toFixed(2)}</span>
                 </div>
                 
-                <div className="flex justify-between text-gray-700">
+                <div className="flex justify-between text-xs sm:text-sm text-gray-700">
                   <span>Shipping</span>
                   <span className="text-green-600">Free</span>
                 </div>
                 
-                <div className="border-t border-gray-200 pt-3">
-                  <div className="flex justify-between text-lg font-semibold text-gray-900">
+                <div className="border-t border-gray-200 pt-2 sm:pt-3">
+                  <div className="flex justify-between text-base sm:text-lg font-semibold text-gray-900">
                     <span>Total</span>
                     <span>₹{priceBreakdown.total.toFixed(2)}</span>
                   </div>
@@ -519,7 +519,7 @@ const Checkout = () => {
               <button
                 onClick={handlePlaceOrder}
                 disabled={processing || !selectedAddressId}
-                className="w-full py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2.5 sm:py-3 text-sm sm:text-base bg-rose-600 text-white rounded-lg hover:bg-rose-700 active:bg-rose-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {processing ? 'Processing...' : 'Proceed to Payment'}
               </button>
@@ -529,13 +529,13 @@ const Checkout = () => {
                 <button
                   onClick={handleTestPayment}
                   disabled={processing || !selectedAddressId}
-                  className="w-full py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                  className="w-full py-2.5 sm:py-3 text-xs sm:text-sm bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 active:bg-yellow-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed mt-2"
                 >
                   {processing ? 'Processing...' : '🧪 Test Payment (Skip Razorpay)'}
                 </button>
               )}
 
-              <p className="text-xs text-gray-500 text-center mt-4">
+              <p className="text-[10px] sm:text-xs text-gray-500 text-center mt-3 sm:mt-4">
                 By placing this order, you agree to our Terms & Conditions
               </p>
             </div>

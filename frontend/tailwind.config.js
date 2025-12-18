@@ -6,6 +6,15 @@ export default {
   ],
   theme: {
     extend: {
+      screens: {
+        'xs': '475px',
+        // Default Tailwind breakpoints:
+        // sm: '640px'   - Small devices (landscape phones)
+        // md: '768px'   - Medium devices (tablets)
+        // lg: '1024px'  - Large devices (desktops)
+        // xl: '1280px'  - Extra large devices (large desktops)
+        // 2xl: '1536px' - 2X Extra large devices
+      },
       colors: {
         beige: {
           50: '#faf9f7',

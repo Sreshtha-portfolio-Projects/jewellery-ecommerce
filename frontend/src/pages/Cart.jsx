@@ -63,38 +63,38 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-beige-50 py-12">
-      <div className="container mx-auto px-4 max-w-6xl">
-        <h1 className="font-serif text-4xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
+    <div className="min-h-screen bg-beige-50 py-4 sm:py-6 md:py-12">
+      <div className="container mx-auto px-4 sm:px-6 max-w-6xl">
+        <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-6 sm:mb-8">Shopping Cart</h1>
 
         {cartItems.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-            <svg className="w-24 h-24 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white rounded-lg shadow-sm p-8 sm:p-12 text-center">
+            <svg className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-4">Your cart is empty</h2>
-            <p className="text-gray-600 mb-6">Start shopping to add items to your cart.</p>
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-3 sm:mb-4">Your cart is empty</h2>
+            <p className="text-sm sm:text-base text-gray-600 mb-5 sm:mb-6">Start shopping to add items to your cart.</p>
             <Link
               to="/products"
-              className="inline-block px-6 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium"
+              className="inline-block px-5 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base bg-rose-600 text-white rounded-lg hover:bg-rose-700 active:bg-rose-800 transition-colors font-medium"
             >
               Continue Shopping
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
             {/* Cart Items */}
-            <div className="lg:col-span-2 space-y-4">
+            <div className="lg:col-span-2 space-y-3 sm:space-y-4">
               {cartItems.map((item) => {
                 const product = item.products || item;
                 const price = parseFloat(product.price || 0);
                 const itemTotal = price * (item.quantity || 0);
 
                 return (
-                  <div key={item.id} className="bg-white rounded-lg shadow-sm p-6">
-                    <div className="flex gap-4">
+                  <div key={item.id} className="bg-white rounded-lg shadow-sm p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                       <Link to={`/product/${product.id}`} className="flex-shrink-0">
-                        <div className="w-24 h-24 bg-beige-100 rounded-lg overflow-hidden">
+                        <div className="w-full sm:w-20 md:w-24 h-20 sm:h-20 md:h-24 bg-beige-100 rounded-lg overflow-hidden">
                           {product.image_url ? (
                             <img
                               src={product.image_url}
@@ -103,7 +103,7 @@ const Cart = () => {
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-beige-400">
-                              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-10 h-10 sm:w-12 sm:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
                             </div>
@@ -111,45 +111,52 @@ const Cart = () => {
                         </div>
                       </Link>
 
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <Link to={`/product/${product.id}`}>
-                          <h3 className="font-serif text-lg font-semibold text-gray-900 mb-2 hover:text-rose-700 transition-colors">
+                          <h3 className="font-serif text-base sm:text-lg font-semibold text-gray-900 mb-1 sm:mb-2 hover:text-rose-700 transition-colors line-clamp-2">
                             {product.name}
                           </h3>
                         </Link>
-                        <p className="text-gray-600 mb-4">${price.toFixed(2)}</p>
+                        <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">${price.toFixed(2)}</p>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                           <div className="flex items-center border border-gray-300 rounded">
                             <button
                               onClick={() => handleUpdateQuantity(item.id, (item.quantity || 1) - 1)}
                               disabled={updating[item.id] || item.quantity <= 1}
-                              className="px-3 py-1 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                              className="px-2 sm:px-3 py-1 hover:bg-gray-100 active:bg-gray-200 transition-colors disabled:opacity-50 text-lg sm:text-base"
                             >
                               -
                             </button>
-                            <span className="px-4 py-1">{item.quantity || 1}</span>
+                            <span className="px-3 sm:px-4 py-1 text-sm sm:text-base">{item.quantity || 1}</span>
                             <button
                               onClick={() => handleUpdateQuantity(item.id, (item.quantity || 1) + 1)}
                               disabled={updating[item.id]}
-                              className="px-3 py-1 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                              className="px-2 sm:px-3 py-1 hover:bg-gray-100 active:bg-gray-200 transition-colors disabled:opacity-50 text-lg sm:text-base"
                             >
                               +
                             </button>
                           </div>
 
-                          <button
-                            onClick={() => handleRemove(item.id)}
-                            disabled={updating[item.id]}
-                            className="text-red-600 hover:text-red-700 text-sm font-medium disabled:opacity-50"
-                          >
-                            Remove
-                          </button>
+                          <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+                            <button
+                              onClick={() => handleRemove(item.id)}
+                              disabled={updating[item.id]}
+                              className="text-red-600 hover:text-red-700 text-xs sm:text-sm font-medium disabled:opacity-50"
+                            >
+                              Remove
+                            </button>
+                            <div className="text-right sm:hidden">
+                              <p className="text-base sm:text-lg font-semibold text-gray-900">
+                                ${itemTotal.toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <p className="text-lg font-semibold text-gray-900">
+                      <div className="hidden sm:block text-right">
+                        <p className="text-base sm:text-lg font-semibold text-gray-900">
                           ${itemTotal.toFixed(2)}
                         </p>
                       </div>
@@ -161,20 +168,20 @@ const Cart = () => {
 
             {/* Order Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
-                <h2 className="font-serif text-2xl font-semibold text-gray-900 mb-6">Order Summary</h2>
+              <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 sticky top-4">
+                <h2 className="font-serif text-xl sm:text-2xl font-semibold text-gray-900 mb-4 sm:mb-6">Order Summary</h2>
                 
-                <div className="space-y-4 mb-6">
-                  <div className="flex justify-between text-gray-700">
+                <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+                  <div className="flex justify-between text-sm sm:text-base text-gray-700">
                     <span>Subtotal</span>
                     <span>${total.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-gray-700">
+                  <div className="flex justify-between text-sm sm:text-base text-gray-700">
                     <span>Shipping</span>
                     <span className="text-green-600">Free</span>
                   </div>
-                  <div className="border-t border-gray-200 pt-4">
-                    <div className="flex justify-between text-lg font-semibold text-gray-900">
+                  <div className="border-t border-gray-200 pt-3 sm:pt-4">
+                    <div className="flex justify-between text-base sm:text-lg font-semibold text-gray-900">
                       <span>Total</span>
                       <span>${total.toFixed(2)}</span>
                     </div>
@@ -183,14 +190,14 @@ const Cart = () => {
 
                 <Link
                   to="/checkout"
-                  className="block w-full py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium mb-4 text-center"
+                  className="block w-full py-2.5 sm:py-3 text-sm sm:text-base bg-rose-600 text-white rounded-lg hover:bg-rose-700 active:bg-rose-800 transition-colors font-medium mb-3 sm:mb-4 text-center"
                 >
                   Proceed to Checkout
                 </Link>
 
                 <Link
                   to="/products"
-                  className="block text-center text-rose-600 hover:text-rose-700 font-medium"
+                  className="block text-center text-sm sm:text-base text-rose-600 hover:text-rose-700 font-medium"
                 >
                   Continue Shopping
                 </Link>

@@ -215,20 +215,20 @@ const ProductDetail = () => {
   }
 
   return (
-    <div className="min-h-screen bg-beige-50 py-12">
-      <div className="container mx-auto px-4">
+    <div className="min-h-screen bg-beige-50 py-4 sm:py-6 md:py-12">
+      <div className="container mx-auto px-4 sm:px-6">
         <button
           onClick={() => navigate(-1)}
-          className="mb-6 text-gray-600 hover:text-rose-700 transition-colors flex items-center gap-2"
+          className="mb-4 sm:mb-6 text-sm sm:text-base text-gray-600 hover:text-rose-700 transition-colors flex items-center gap-2"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
           Back
         </button>
 
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8">
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 p-4 sm:p-6 md:p-8">
             {/* Product Images */}
             <div>
               {/* Main Image */}
@@ -272,7 +272,7 @@ const ProductDetail = () => {
 
             {/* Product Info */}
             <div className="flex flex-col justify-center">
-              <h1 className="font-serif text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
                 {product.name}
               </h1>
 
@@ -298,25 +298,25 @@ const ProductDetail = () => {
               )}
 
               {/* Price */}
-              <div className="mb-6">
+              <div className="mb-4 sm:mb-6">
                 {product.offer && (
                   <div className="mb-2">
-                    <span className="text-lg text-gray-500 line-through mr-2">
+                    <span className="text-base sm:text-lg text-gray-500 line-through mr-2">
                       ₹{originalPrice.toLocaleString('en-IN')}
                     </span>
-                    <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-sm font-medium">
+                    <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs sm:text-sm font-medium">
                       {product.offer.discount_percentage
                         ? `${product.offer.discount_percentage}% OFF`
                         : `₹${discountAmount.toLocaleString('en-IN')} OFF`}
                     </span>
                   </div>
                 )}
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-semibold text-gray-900">
+                <div className="flex items-baseline gap-2 flex-wrap">
+                  <span className="text-2xl sm:text-3xl font-semibold text-gray-900">
                     ₹{finalPrice.toLocaleString('en-IN')}
                   </span>
                   {product.offer?.offer_text && (
-                    <span className="text-sm text-green-600 font-medium">
+                    <span className="text-xs sm:text-sm text-green-600 font-medium">
                       {product.offer.offer_text}
                     </span>
                   )}
@@ -334,9 +334,9 @@ const ProductDetail = () => {
 
               {/* Description */}
               {product.description && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                <div className="mb-4 sm:mb-6">
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Description</h3>
+                  <p className="text-sm sm:text-base text-gray-700 leading-relaxed whitespace-pre-line">
                     {product.description}
                   </p>
                 </div>
@@ -419,21 +419,21 @@ const ProductDetail = () => {
               )}
 
               {/* Delivery Check */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+              <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg">
                 <h3 className="text-sm font-semibold text-gray-900 mb-2">Check Delivery</h3>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     placeholder="Enter pincode"
                     value={pincode}
                     onChange={(e) => setPincode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
                     maxLength="6"
                   />
                   <button
                     onClick={handleCheckDelivery}
                     disabled={checkingDelivery || !pincode}
-                    className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 text-sm sm:text-base bg-rose-600 text-white rounded-lg hover:bg-rose-700 active:bg-rose-800 transition-colors disabled:opacity-50 whitespace-nowrap"
                   >
                     {checkingDelivery ? 'Checking...' : 'Check'}
                   </button>
@@ -471,14 +471,14 @@ const ProductDetail = () => {
               )}
 
               {/* Quantity */}
-              <div className="flex items-center gap-4 mb-6">
-                <label htmlFor="quantity" className="text-sm font-medium text-gray-700">
+              <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <label htmlFor="quantity" className="text-sm font-medium text-gray-700 whitespace-nowrap">
                   Quantity:
                 </label>
                 <div className="flex items-center border border-gray-300 rounded">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-3 py-1 hover:bg-gray-100 transition-colors"
+                    className="px-2 sm:px-3 py-1 hover:bg-gray-100 active:bg-gray-200 transition-colors text-lg sm:text-base"
                     disabled={quantity <= 1}
                   >
                     -
@@ -488,12 +488,12 @@ const ProductDetail = () => {
                     id="quantity"
                     value={quantity}
                     onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                    className="w-16 px-2 py-1 text-center border-0 focus:outline-none"
+                    className="w-12 sm:w-16 px-2 py-1 text-center border-0 focus:outline-none text-sm sm:text-base"
                     min="1"
                   />
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="px-3 py-1 hover:bg-gray-100 transition-colors"
+                    className="px-2 sm:px-3 py-1 hover:bg-gray-100 active:bg-gray-200 transition-colors text-lg sm:text-base"
                   >
                     +
                   </button>
@@ -501,7 +501,7 @@ const ProductDetail = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <button
                   onClick={handleAddToCart}
                   disabled={
@@ -510,7 +510,7 @@ const ProductDetail = () => {
                     (selectedVariant && selectedVariant.stock_quantity === 0) ||
                     (!selectedVariant && product.stock_quantity !== undefined && product.stock_quantity === 0)
                   }
-                  className="flex-1 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-2.5 sm:py-3 text-sm sm:text-base bg-gray-900 text-white rounded-lg hover:bg-gray-800 active:bg-gray-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {addingToCart ? 'Adding...' : 'Add to Cart'}
                 </button>
@@ -522,7 +522,7 @@ const ProductDetail = () => {
                     (selectedVariant && selectedVariant.stock_quantity === 0) ||
                     (!selectedVariant && product.stock_quantity !== undefined && product.stock_quantity === 0)
                   }
-                  className="flex-1 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-2.5 sm:py-3 text-sm sm:text-base bg-rose-600 text-white rounded-lg hover:bg-rose-700 active:bg-rose-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Buy Now
                 </button>
@@ -532,13 +532,13 @@ const ProductDetail = () => {
         </div>
 
         {/* Reviews Section */}
-        <div className="bg-white rounded-lg shadow-sm p-8 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Customer Reviews</h2>
+        <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 md:p-8 mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Customer Reviews</h2>
             {isAuthenticated && (
               <button
                 onClick={() => setShowReviewForm(!showReviewForm)}
-                className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors"
+                className="px-4 py-2 text-sm sm:text-base bg-rose-600 text-white rounded-lg hover:bg-rose-700 active:bg-rose-800 transition-colors w-full sm:w-auto"
               >
                 {showReviewForm ? 'Cancel' : 'Write a Review'}
               </button>
@@ -629,9 +629,9 @@ const ProductDetail = () => {
 
         {/* You May Also Like */}
         {relatedProducts.length > 0 && (
-          <div className="bg-white rounded-lg shadow-sm p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">You May Also Like</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 md:p-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">You May Also Like</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
               {relatedProducts.map((relatedProduct) => (
                 <ProductCard key={relatedProduct.id} product={relatedProduct} />
               ))}
