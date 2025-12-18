@@ -1,261 +1,339 @@
-# 🚚 Shipping & Tracking System  
-## Aldorado Jewells
+# 🧠 Cursor Coding Prompts  
+## Aldorado Jewells – Returns & Refunds + Invoice PDF Generation
 
-This document defines the **Shipping & Order Tracking system** for Aldorado Jewells.  
-It focuses on **reliability, clarity, and scalability**, similar to Myntra / Flipkart.
-
----
-
-## 🎯 GOAL
-
-- Enable admins to ship orders confidently  
-- Integrate courier services via a clean abstraction layer  
-- Allow customers to track orders transparently  
-- Prepare the system for returns and refunds  
+This document contains **two production-grade Cursor coding prompts**.  
+Each prompt is written to be pasted **directly into Cursor** and executed independently.
 
 ---
 
-## 🧱 CORE ARCHITECTURE
+# 🔄 PROMPT 1: RETURNS & REFUNDS SYSTEM  
+## Aldorado Jewells – Admin-Controlled Returns & Refund Flow
 
-### Courier Abstraction Layer (MANDATORY)
+---
 
-Implement a pluggable courier service:
+## PROJECT CONTEXT (LOCKED – DO NOT CHANGE)
 
-CourierService
-├─ ShiprocketProvider
-├─ DelhiveryProvider
-├─ ManualProvider
+You are extending an existing **Aldorado Jewells** luxury jewellery e-commerce platform.
+
+Already implemented:
+- React (JSX) frontend with Tailwind
+- Node.js + Express backend
+- Supabase (Postgres + Auth) via backend only
+- JWT authentication
+- Payments completed
+- Order Detail page exists
+- In-house shipping & tracking system implemented
+
+❌ Do NOT automate refunds  
+❌ Do NOT allow instant refunds  
+✅ Returns & refunds must be **admin-controlled**
+
+---
+
+## GOAL OF THIS FEATURE
+
+Implement a **secure, auditable Returns & Refund system** where:
+- Users can request returns
+- Admin reviews and approves/rejects
+- Refunds are processed manually (gateway integration later)
+- All actions are logged
+
+This system must be **jewellery-appropriate**, not fashion-style.
+
+---
+
+## RETURN FLOW (STRICT)
+
+Allowed only if:
+order.shipping_status = DELIVERED
 
 yaml
 Copy code
 
-**Rules:**
-- Courier logic must be isolated from controllers
-- Switching courier providers must not affect order logic
-- Manual provider acts as fallback
+Return window:
+- Admin-configurable (e.g. 7 days)
 
 ---
 
-## 🚚 SHIPPING FLOW (END-TO-END)
-
-1. Order status becomes `PAID`
-2. Admin clicks **Create Shipment**
-3. Backend:
-   - Validates order & delivery address
-   - Sends shipment request to courier API
-   - Receives:
-     - Courier name
-     - Tracking ID
-     - Initial shipment status
-4. Order updated with shipment details
-5. Courier updates shipment status via:
-   - Webhook (preferred)
-   - Polling (fallback)
-6. User sees updated tracking in profile
-
----
-
-## 📦 SHIPPING STATUS FLOW (STRICT)
-
-NOT_SHIPPED
-→ SHIPPED
-→ IN_TRANSIT
-→ OUT_FOR_DELIVERY
-→ DELIVERED
-→ RETURNED
-
-yaml
-Copy code
-
-- No state skipping
-- Every transition logged
-
----
-
-## 👤 CUSTOMER-SIDE ORDER TRACKING
+## USER-SIDE IMPLEMENTATION
 
 ### Location
-Profile → Orders → Order Details
+My Account → Orders → Order Detail
 
 yaml
 Copy code
 
-### Display
-- Courier name
-- Tracking number
-- Current shipment status
-- Status timeline
-- Last updated timestamp
+### User Action
+Add **“Request Return”** button.
 
-**UX Principles:**
-- Calm and clear
-- No technical jargon
-- Similar to Myntra-style tracking
+User submits:
+- Return reason (dropdown)
+  - Size issue
+  - Damaged item
+  - Not as expected
+- Optional note
 
----
-
-## 🧑‍💼 ADMIN-SIDE SHIPPING VIEW
-
-Admin must be able to:
-- View shipment status per order
-- See tracking ID and courier name
-- Manually update status (fallback)
-- Re-sync courier status
+On submit:
+- Create Return Request
+- Status = `REQUESTED`
+- User cannot edit request after submission
 
 ---
 
-## 🔐 SECURITY & RELIABILITY
+## ADMIN-SIDE IMPLEMENTATION
 
-- Courier webhooks must be verified
-- Order ownership enforced
-- Idempotent webhook handling
-- All status changes logged
-
----
-
-## 🚫 NOT INCLUDED IN THIS PHASE
-
-- International shipping
-- Auto courier selection
-- Shipping cost calculation logic
-- RTO optimization
-
----
-
-## ✅ SUCCESS CRITERIA
-
-- Admin can ship orders without confusion
-- Customers can track orders reliably
-- Courier system is provider-agnostic
-- System is ready for returns & refunds
-
----
-
-# 🧑‍💼 Admin Order Fulfillment System  
-## Aldorado Jewells
-
-This document defines **Admin Order Fulfillment**, turning the platform into a **real operational tool**.
-
----
-
-## 🎯 GOAL
-
-Enable admins to:
-- Manage orders end-to-end
-- Process shipments
-- Track fulfillment status
-- Handle operational exceptions
-
----
-
-## 📋 ADMIN ORDER MANAGEMENT
-
-### Orders List Page
-
-Display:
+### Admin Returns List
+Show:
 - Order ID
 - Customer name
-- Order date
-- Order value
-- Payment status
-- Fulfillment status
-
-Filters:
-- Date range
-- Order status
-- Payment status
+- Return reason
+- Request date
+- Return status
 
 ---
 
-### Order Detail Page (Admin)
+### Admin Return Actions
 
-Must include:
-- Immutable order snapshot
-- Items & selected variants
-- Payment details
-- Delivery address
-- Shipping & tracking details
-- Full status timeline
-- Admin internal notes
+Admin can:
+- Approve return
+- Reject return (mandatory reason)
 
----
-
-## 🔄 ORDER STATE MANAGEMENT (STRICT)
-
-Admin-controlled lifecycle:
-
-PAID
-→ PROCESSING
-→ SHIPPED
-→ DELIVERED
-→ RETURNED
+If approved:
+return_status = APPROVED
 
 yaml
 Copy code
 
-**Rules:**
-- No skipping states
-- Confirmation required for each change
-- All transitions audited
+Admin provides:
+- Return instructions (text)
+- Return address
 
 ---
 
-## 🧠 ADMIN ACTIONS
+### Item Received & Inspection
 
-Admin must be able to:
-- Mark order as Processing
-- Create shipment
-- Mark as Shipped / Delivered
-- Handle failed deliveries (future-ready)
-- Add internal notes (not visible to user)
+Admin manually updates:
+return_status = RECEIVED
 
----
+yaml
+Copy code
 
-## 📊 OPERATIONAL VISIBILITY
-
-Enhance admin dashboard with:
-- Orders pending shipment
-- Orders shipped today
-- Orders delivered today
-- Orders stuck in processing
+After inspection:
+- Verify authenticity
+- Check damage
 
 ---
 
-## 🔐 AUDIT & SAFETY
+### Refund Lifecycle
 
-- Role-based access control
-- Audit logs for every admin action
-- Prevent duplicate fulfillment
-- Manual override requires reason
+Admin updates:
+REFUND_INITIATED → REFUNDED
 
----
+yaml
+Copy code
 
-## 🚫 NOT INCLUDED IN THIS PHASE
-
-- Refund execution
-- Automated RTO handling
-- Warehouse management
-- SLA penalties
+Store:
+- Refund amount
+- Refund date
+- Refund reference (manual for now)
 
 ---
 
-## ✅ SUCCESS CRITERIA
+## RETURN STATE MACHINE (MANDATORY)
 
-- Admin can fulfill orders without ambiguity
-- Order states are consistent and traceable
-- Operations scale cleanly with volume
-- System is ready for returns & refunds
+NONE
+→ REQUESTED
+→ APPROVED / REJECTED
+→ RECEIVED
+→ REFUND_INITIATED
+→ REFUNDED
+
+yaml
+Copy code
+
+No skipping states.
 
 ---
 
-## 🔜 RECOMMENDED NEXT STEPS
+## SECURITY & INTEGRITY
 
-1. Returns & Refund Flow  
-2. Admin Analytics & Operations Dashboard  
-3. Courier SLA & performance tracking  
+- Only admin can approve/reject
+- Refund amount must come from order snapshot
+- User cannot trigger refunds
+- All actions audited
+
+---
+
+## DO NOT IMPLEMENT YET
+
+- Auto refunds
+- Partial refunds
+- Pickup scheduling
+- Notifications
+
+Design so these can be added later.
+
+---
+
+## SUCCESS CRITERIA
+
+- Users can request returns
+- Admin controls entire flow
+- Refunds are traceable
+- No automated money movement
+
+---
+
+# 📄 PROMPT 2: INVOICE PDF GENERATION  
+## Aldorado Jewells – Immutable Invoice System
+
+---
+
+## PROJECT CONTEXT (LOCKED – DO NOT CHANGE)
+
+You are extending the same Aldorado Jewells platform.
+
+Already implemented:
+- Payments completed
+- Order snapshots immutable
+- Order Detail page exists
+
+Invoices must be **legally reliable** and **unchangeable**.
+
+---
+
+## GOAL OF THIS FEATURE
+
+Implement **backend-generated Invoice PDFs** that:
+- Are created once per order
+- Reflect exact order snapshot
+- Are downloadable by user & admin
+- Are stored securely
+
+---
+
+## WHEN TO GENERATE INVOICE
+
+Choose ONE trigger:
+- After payment success
+OR
+- After shipment creation (preferred for jewellery)
+
+Invoice must never be regenerated.
+
+---
+
+## BACKEND IMPLEMENTATION
+
+On trigger:
+- Generate PDF using order snapshot
+- Store PDF in secure storage
+- Save:
+  - invoice_id
+  - invoice_url
+  - invoice_created_at
+- Link invoice to order
+
+---
+
+## INVOICE CONTENT (MANDATORY)
+
+### Seller Details
+- Store name
+- Address
+- GST number (if applicable)
+
+### Buyer Details
+- Customer name
+- Billing address
+- Shipping address
+
+### Order Details
+- Order ID
+- Order date
+- Invoice date
+
+### Line Items
+For each item:
+- Product name
+- Variant details
+- Quantity
+- Unit price
+- Tax per item
+
+### Totals
+- Subtotal
+- Discount
+- Tax
+- Shipping
+- **Final amount paid**
+
+---
+
+## USER-SIDE ACCESS
+
+Location:
+My Account → Orders → Order Detail
+
+yaml
+Copy code
+
+Add:
+- “Download Invoice” button
+
+Rules:
+- Invoice always available after creation
+- Read-only
+- No edits
+
+---
+
+## ADMIN-SIDE ACCESS
+
+Admin can:
+- Download any invoice
+- View invoice metadata
+
+---
+
+## SECURITY & COMPLIANCE
+
+- Invoice tied permanently to order ID
+- No frontend-generated PDFs
+- User can access only their invoice
+- Invoice remains valid even after refund
+
+Refunds must NOT modify invoice.
+
+---
+
+## DO NOT IMPLEMENT
+
+- Invoice regeneration
+- Editable invoices
+- Credit notes (future phase)
+- Dynamic tax recalculation
+
+---
+
+## SUCCESS CRITERIA
+
+- Invoice generated once
+- PDF reflects order snapshot exactly
+- Users trust invoice for records
+- System is compliant & auditable
+
+---
+
+## NEXT RECOMMENDED FEATURES
+
+1. Refund gateway integration
+2. Credit note generation
+3. Return analytics
+4. Admin compliance dashboard
 
 ---
 
 **Note:**  
-Shipping & fulfillment are operational foundations.  
-They must prioritize **clarity, correctness, and auditability** over speed.
+Returns & invoices are **legal and financial systems**.  
+Precision and auditability matter more than speed.
