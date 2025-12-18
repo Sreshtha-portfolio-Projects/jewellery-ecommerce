@@ -7,10 +7,10 @@ const GetInspired = () => {
   ];
 
   return (
-    <section className="py-16 bg-white">
-      <div className="container mx-auto px-4">
-        <h2 className="font-serif text-3xl font-bold text-center text-gray-900 mb-12">Get Inspired</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <section className="py-8 sm:py-12 md:py-16 bg-white">
+      <div className="container mx-auto px-4 sm:px-6">
+        <h2 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-900 mb-8 sm:mb-10 md:mb-12">Get Inspired</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           {images.map((image, index) => (
             <div key={index} className="aspect-square overflow-hidden rounded-lg bg-beige-100 group cursor-pointer">
               <img
