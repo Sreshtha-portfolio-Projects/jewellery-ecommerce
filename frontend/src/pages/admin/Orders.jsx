@@ -8,6 +8,7 @@ const Orders = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
 
   useEffect(() => {
     fetchOrders();
@@ -54,12 +55,36 @@ const Orders = () => {
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
+  const getPaymentStatusColor = (status) => {
+    const colors = {
+      paid: 'bg-green-100 text-green-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      failed: 'bg-red-100 text-red-800',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getFulfillmentStatusColor = (status) => {
+    const colors = {
+      NOT_SHIPPED: 'bg-gray-100 text-gray-800',
+      PROCESSING: 'bg-yellow-100 text-yellow-800',
+      SHIPPED: 'bg-indigo-100 text-indigo-800',
+      IN_TRANSIT: 'bg-purple-100 text-purple-800',
+      OUT_FOR_DELIVERY: 'bg-blue-100 text-blue-800',
+      DELIVERED: 'bg-green-100 text-green-800',
+      RETURNED: 'bg-red-100 text-red-800',
+    };
+    return colors[status] || 'bg-gray-100 text-gray-800';
+  };
+
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      order.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.order_number?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesPaymentStatus = paymentStatusFilter === 'all' || order.payment_status === paymentStatusFilter;
+    return matchesSearch && matchesStatus && matchesPaymentStatus;
   });
 
   if (loading) {
@@ -86,7 +111,7 @@ const Orders = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <input
               type="text"
-              placeholder="Search orders..."
+              placeholder="Search orders, order number, customer..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
@@ -96,17 +121,23 @@ const Orders = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
             >
-              <option value="all">All Statuses</option>
+              <option value="all">All Order Statuses</option>
               <option value="pending">Pending</option>
               <option value="paid">Paid</option>
               <option value="shipped">Shipped</option>
               <option value="delivered">Delivered</option>
               <option value="returned">Returned</option>
             </select>
-            <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2">
-              <span>🔍</span>
-              <span>More Filters</span>
-            </button>
+            <select
+              value={paymentStatusFilter}
+              onChange={(e) => setPaymentStatusFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+            >
+              <option value="all">All Payment Statuses</option>
+              <option value="paid">Paid</option>
+              <option value="pending">Payment Pending</option>
+              <option value="failed">Failed</option>
+            </select>
           </div>
 
           {/* Orders Table */}
@@ -114,19 +145,20 @@ const Orders = () => {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order #</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date & Time</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Items</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order Value</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fulfillment</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan="8" className="px-4 py-8 text-center text-gray-500">
                       No orders found
                     </td>
                   </tr>
@@ -134,13 +166,13 @@ const Orders = () => {
                   filteredOrders.map((order) => (
                     <tr key={order.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                        {order.id?.slice(0, 8) || 'ORD-' + order.id?.substring(0, 4)}
+                        {order.order_number || order.id?.slice(0, 8) || 'ORD-' + order.id?.substring(0, 4)}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {formatDate(order.created_at)}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-900">
-                        {order.customer_name || 'N/A'}
+                        {order.customerName || 'N/A'}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         {order.items?.length || 0} item{order.items?.length !== 1 ? 's' : ''}
@@ -150,11 +182,20 @@ const Orders = () => {
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            order.status
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(
+                            order.payment_status
                           )}`}
                         >
-                          {order.status?.toUpperCase() || 'PENDING'}
+                          {order.payment_status?.toUpperCase() || 'PENDING'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${getFulfillmentStatusColor(
+                            order.shipment_status
+                          )}`}
+                        >
+                          {order.shipment_status ? order.shipment_status.replace(/_/g, ' ') : 'NOT SHIPPED'}
                         </span>
                       </td>
                       <td className="px-4 py-3">

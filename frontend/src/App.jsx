@@ -37,6 +37,7 @@ import AdminPricingRules from './pages/admin/PricingRules';
 import AdminAbandonedCarts from './pages/admin/AbandonedCarts';
 import AdminCustomers from './pages/admin/Customers';
 import AdminSettings from './pages/admin/Settings';
+import DeliveryZones from './pages/admin/DeliveryZones';
 import './App.css';
 
 function App() {
@@ -184,6 +185,7 @@ function App() {
           <Route path="abandoned-carts" element={<AdminAbandonedCarts />} />
           <Route path="customers" element={<AdminCustomers />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="delivery-zones" element={<DeliveryZones />} />
         </Route>
       </Routes>
     </Router>

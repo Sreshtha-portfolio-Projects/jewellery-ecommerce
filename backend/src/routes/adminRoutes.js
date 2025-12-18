@@ -11,6 +11,15 @@ const {
   getShippingHistory,
   getNextValidStatuses
 } = require('../controllers/adminShippingController');
+const {
+  getAllDeliveryZones,
+  getDeliveryZoneById,
+  createDeliveryZone,
+  updateDeliveryZone,
+  deleteDeliveryZone,
+  bulkImportDeliveryZones,
+  getDeliveryZoneFilters
+} = require('../controllers/adminDeliveryController');
 
 // All admin routes require authentication
 router.use(authenticateToken);
@@ -303,5 +312,111 @@ router.get('/orders/:id/shipping/history', getShippingHistory);
  *         description: Next valid statuses
  */
 router.get('/orders/:id/shipping/next-statuses', getNextValidStatuses);
+
+/**
+ * @swagger
+ * /api/admin/delivery-zones:
+ *   get:
+ *     summary: Get all delivery zones
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: pincode
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: product_id
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *     responses:
+ *       200:
+ *         description: List of delivery zones
+ */
+router.get('/delivery-zones', getAllDeliveryZones);
+
+/**
+ * @swagger
+ * /api/admin/delivery-zones/filters:
+ *   get:
+ *     summary: Get delivery zone filter options
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Filter options
+ */
+router.get('/delivery-zones/filters', getDeliveryZoneFilters);
+
+/**
+ * @swagger
+ * /api/admin/delivery-zones/:id:
+ *   get:
+ *     summary: Get delivery zone by ID
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.get('/delivery-zones/:id', getDeliveryZoneById);
+
+/**
+ * @swagger
+ * /api/admin/delivery-zones:
+ *   post:
+ *     summary: Create delivery zone
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post('/delivery-zones', createDeliveryZone);
+
+/**
+ * @swagger
+ * /api/admin/delivery-zones/:id:
+ *   put:
+ *     summary: Update delivery zone
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.put('/delivery-zones/:id', updateDeliveryZone);
+
+/**
+ * @swagger
+ * /api/admin/delivery-zones/:id:
+ *   delete:
+ *     summary: Delete delivery zone
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.delete('/delivery-zones/:id', deleteDeliveryZone);
+
+/**
+ * @swagger
+ * /api/admin/delivery-zones/bulk-import:
+ *   post:
+ *     summary: Bulk import delivery zones
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ */
+router.post('/delivery-zones/bulk-import', bulkImportDeliveryZones);
 
 module.exports = router;

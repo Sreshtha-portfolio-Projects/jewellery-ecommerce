@@ -71,7 +71,13 @@ const ProductDetail = () => {
 
     try {
       setCheckingDelivery(true);
-      const info = await deliveryService.checkDelivery(pincode);
+      // Pass category and product_id for specific delivery times
+      const info = await deliveryService.checkDelivery(
+        pincode,
+        product?.category || null,
+        product?.id || null,
+        product?.metal_type || null
+      );
       setDeliveryInfo(info);
     } catch (error) {
       setMessage('Error checking delivery. Please try again.');

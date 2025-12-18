@@ -12,6 +12,8 @@ const getAllOrders = async (req, res) => {
         order_number,
         created_at,
         status,
+        payment_status,
+        shipment_status,
         total_amount,
         user_id
       `, { count: 'exact' })

@@ -488,23 +488,154 @@ const OrderDetail = () => {
           )}
         </div>
 
-        {/* Order Items */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">Order Items</h2>
-          <div className="space-y-4">
-            {orderData.order_items && orderData.order_items.length > 0 ? (
-              orderData.order_items.map((item) => (
-                <div key={item.id} className="flex justify-between items-center p-4 border border-gray-200 rounded-lg">
-                  <div>
-                    <p className="font-semibold text-gray-900">{item.product_name}</p>
-                    <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Order Items with Variants */}
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">Order Items</h2>
+            <div className="space-y-4">
+              {orderData.order_items && orderData.order_items.length > 0 ? (
+                orderData.order_items.map((item) => (
+                  <div key={item.id} className="p-4 border border-gray-200 rounded-lg">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-900 text-lg">{item.product_name}</p>
+                        <p className="text-sm text-gray-600 mt-1">Quantity: {item.quantity}</p>
+                        {item.variant_snapshot && (
+                          <div className="mt-2 space-y-1">
+                            {item.variant_snapshot.size && (
+                              <p className="text-xs text-gray-500">Size: {item.variant_snapshot.size}</p>
+                            )}
+                            {item.variant_snapshot.color && (
+                              <p className="text-xs text-gray-500">Metal/Color: {item.variant_snapshot.color}</p>
+                            )}
+                            {item.variant_snapshot.finish && (
+                              <p className="text-xs text-gray-500">Finish: {item.variant_snapshot.finish}</p>
+                            )}
+                            {item.variant_snapshot.weight && (
+                              <p className="text-xs text-gray-500">Weight: {item.variant_snapshot.weight}</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <p className="font-semibold text-gray-900 ml-4">{formatCurrency(item.subtotal)}</p>
+                    </div>
+                    <div className="pt-2 border-t border-gray-100">
+                      <p className="text-xs text-gray-500">
+                        Unit Price: {formatCurrency(item.product_price)} × {item.quantity}
+                      </p>
+                    </div>
                   </div>
-                  <p className="font-semibold text-gray-900">{formatCurrency(item.subtotal)}</p>
+                ))
+              ) : (
+                <p className="text-gray-500 text-center py-8">No items found</p>
+              )}
+            </div>
+          </div>
+
+          {/* Order Summary & Details */}
+          <div className="space-y-6">
+            {/* Payment Details */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">Payment Details</h2>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Payment Status</span>
+                  <span className={`font-semibold px-3 py-1 rounded-full text-sm ${
+                    orderData.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {orderData.payment_status?.toUpperCase() || 'PENDING'}
+                  </span>
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-500 text-center py-8">No items found</p>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Payment Method</span>
+                  <span className="font-semibold text-gray-900 capitalize">
+                    {orderData.payment_method || 'Online Payment'}
+                  </span>
+                </div>
+                {orderData.razorpay_payment_id && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Payment ID</span>
+                    <span className="font-mono text-sm text-gray-900">
+                      {orderData.razorpay_payment_id.length >= 8 
+                        ? orderData.razorpay_payment_id.substring(0, 8) + '****' 
+                        : orderData.razorpay_payment_id}
+                    </span>
+                  </div>
+                )}
+                {orderData.razorpay_order_id && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Razorpay Order ID</span>
+                    <span className="font-mono text-sm text-gray-900">{orderData.razorpay_order_id}</span>
+                  </div>
+                )}
+                <div className="pt-3 border-t border-gray-200">
+                  <div className="flex justify-between text-lg">
+                    <span className="font-semibold text-gray-900">Amount Paid</span>
+                    <span className="font-bold text-gray-900">{formatCurrency(orderData.total_amount || 0)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Order Summary */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">Order Summary</h2>
+              <div className="space-y-2">
+                <div className="flex justify-between text-gray-700">
+                  <span>Subtotal</span>
+                  <span>{formatCurrency(orderData.subtotal || 0)}</span>
+                </div>
+                {orderData.discount_amount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount {orderData.discount_code && `(${orderData.discount_code})`}</span>
+                    <span>-{formatCurrency(orderData.discount_amount)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-gray-700">
+                  <span>Tax (GST)</span>
+                  <span>{formatCurrency(orderData.tax_amount || 0)}</span>
+                </div>
+                <div className="flex justify-between text-gray-700">
+                  <span>Shipping</span>
+                  <span>{orderData.shipping_cost > 0 ? formatCurrency(orderData.shipping_cost) : 'Free'}</span>
+                </div>
+                <div className="pt-3 border-t border-gray-200">
+                  <div className="flex justify-between text-xl font-bold text-gray-900">
+                    <span>Total</span>
+                    <span>{formatCurrency(orderData.total_amount || 0)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Delivery Address */}
+            {orderData.shipping_address && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">Delivery Address</h2>
+                <div className="text-gray-700 space-y-1">
+                  <p className="font-semibold text-gray-900 text-lg">{orderData.shipping_address.full_name}</p>
+                  <p>{orderData.shipping_address.address_line1}</p>
+                  {orderData.shipping_address.address_line2 && <p>{orderData.shipping_address.address_line2}</p>}
+                  <p>
+                    {orderData.shipping_address.city}, {orderData.shipping_address.state} - {orderData.shipping_address.pincode}
+                  </p>
+                  <p className="mt-2">Phone: {orderData.shipping_address.phone}</p>
+                </div>
+              </div>
             )}
+
+            {/* Admin Internal Notes */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h2 className="text-2xl font-serif font-semibold text-gray-900 mb-4">Admin Notes</h2>
+              {orderData.notes ? (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{orderData.notes}</p>
+                  <p className="text-xs text-gray-500 mt-2">Last updated: {formatDate(orderData.updated_at)}</p>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-sm italic">No internal notes for this order</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
