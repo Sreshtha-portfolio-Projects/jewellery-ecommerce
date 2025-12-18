@@ -11,6 +11,29 @@ const createOrderIntent = async (req, res) => {
     const userId = req.user.userId;
     const { shippingAddressId, billingAddressId, discountCode } = req.body;
 
+    // Validate required fields
+    if (!shippingAddressId) {
+      return res.status(400).json({ 
+        message: 'Shipping address is required',
+        field: 'shippingAddressId'
+      });
+    }
+
+    // Verify address exists and belongs to user
+    const { data: address, error: addressError } = await supabase
+      .from('addresses')
+      .select('id')
+      .eq('id', shippingAddressId)
+      .eq('user_id', userId)
+      .single();
+
+    if (addressError || !address) {
+      return res.status(400).json({ 
+        message: 'Invalid shipping address. Please select a valid address.',
+        field: 'shippingAddressId'
+      });
+    }
+
     // Check if checkout is enabled
     const checkoutEnabled = await cartRevalidationService.isCheckoutEnabled();
     if (!checkoutEnabled) {
@@ -36,7 +59,10 @@ const createOrderIntent = async (req, res) => {
 
     if (!cartItems || cartItems.length === 0) {
       console.log('Cart is empty for user:', userId);
-      return res.status(400).json({ message: 'Cart is empty' });
+      return res.status(400).json({ 
+        message: 'Cart is empty. Please add items to your cart before checkout.',
+        code: 'EMPTY_CART'
+      });
     }
 
     console.log('Cart items found:', cartItems.length, 'for user:', userId);
@@ -83,8 +109,11 @@ const createOrderIntent = async (req, res) => {
 
     if (!validation.valid) {
       console.error('Cart validation failed for user:', userId, 'Errors:', validation.errors);
+      const errorMessage = validation.errors.length > 0 
+        ? validation.errors.join('. ') 
+        : 'Cart validation failed. Please refresh your cart and try again.';
       return res.status(400).json({
-        message: 'Cart validation failed',
+        message: errorMessage,
         errors: validation.errors,
         warnings: validation.warnings,
         requiresRefresh: true

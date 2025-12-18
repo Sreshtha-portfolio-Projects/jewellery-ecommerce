@@ -20,20 +20,24 @@ import ResetPassword from './pages/ResetPassword';
 import AuthCallback from './pages/AuthCallback';
 import Profile from './pages/account/Profile';
 import CustomerOrders from './pages/account/Orders';
+import OrderDetail from './pages/account/OrderDetail';
 import Wishlist from './pages/account/Wishlist';
 import Addresses from './pages/account/Addresses';
+import OrderConfirmation from './pages/OrderConfirmation';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminProducts from './pages/admin/Products';
 import ProductForm from './pages/admin/ProductForm';
 import BulkOperations from './pages/admin/BulkOperations';
 import AdminOrders from './pages/admin/Orders';
+import AdminOrderDetail from './pages/admin/OrderDetail';
 import AdminAnalytics from './pages/admin/Analytics';
 import AdminDiscounts from './pages/admin/Discounts';
 import AdminPricingRules from './pages/admin/PricingRules';
 import AdminAbandonedCarts from './pages/admin/AbandonedCarts';
 import AdminCustomers from './pages/admin/Customers';
 import AdminSettings from './pages/admin/Settings';
+import DeliveryZones from './pages/admin/DeliveryZones';
 import './App.css';
 
 function App() {
@@ -90,6 +94,16 @@ function App() {
           }
         />
         <Route
+          path="/orders/:orderId/confirmation"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <OrderConfirmation />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/about"
           element={
             <MainLayout>
@@ -142,6 +156,7 @@ function App() {
         >
           <Route path="profile" element={<Profile />} />
           <Route path="orders" element={<CustomerOrders />} />
+          <Route path="orders/:orderId" element={<OrderDetail />} />
           <Route path="wishlist" element={<Wishlist />} />
           <Route path="addresses" element={<Addresses />} />
         </Route>
@@ -163,12 +178,14 @@ function App() {
           <Route path="products/:id" element={<ProductForm />} />
           <Route path="products/bulk" element={<BulkOperations />} />
           <Route path="orders" element={<AdminOrders />} />
+          <Route path="orders/:id" element={<AdminOrderDetail />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="discounts" element={<AdminDiscounts />} />
           <Route path="pricing-rules" element={<AdminPricingRules />} />
           <Route path="abandoned-carts" element={<AdminAbandonedCarts />} />
           <Route path="customers" element={<AdminCustomers />} />
           <Route path="settings" element={<AdminSettings />} />
+          <Route path="delivery-zones" element={<DeliveryZones />} />
         </Route>
       </Routes>
     </Router>

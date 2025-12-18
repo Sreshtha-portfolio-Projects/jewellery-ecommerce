@@ -12,7 +12,17 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      return res.status(403).json({ message: 'Invalid or expired token' });
+      console.error('JWT verification error:', {
+        error: err.message,
+        name: err.name,
+        hasSecret: !!JWT_SECRET,
+        secretLength: JWT_SECRET?.length,
+        tokenPreview: token?.substring(0, 20) + '...'
+      });
+      return res.status(403).json({ 
+        message: 'Invalid or expired token',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+      });
     }
     req.user = user;
     next();

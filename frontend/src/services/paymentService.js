@@ -25,6 +25,17 @@ export const paymentService = {
       razorpay_signature: paymentData.razorpay_signature
     });
     return response.data;
+  },
+
+  /**
+   * TEST MODE: Simulate payment success (for local testing only)
+   * Only works when ENABLE_TEST_MODE=true in backend .env
+   */
+  simulateTestPayment: async (orderIntentId) => {
+    const response = await api.post('/payments/test/simulate-payment', {
+      orderIntentId
+    });
+    return response.data;
   }
 };
 

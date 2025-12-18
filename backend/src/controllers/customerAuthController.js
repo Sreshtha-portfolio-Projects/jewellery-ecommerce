@@ -50,7 +50,8 @@ const signup = async (req, res) => {
         id: authData.user.id,
         email: authData.user.email,
         name: authData.user.user_metadata?.full_name,
-        mobile: authData.user.user_metadata?.mobile || null
+        mobile: authData.user.user_metadata?.mobile || null,
+        role: 'customer'
       },
     });
   } catch (error) {

@@ -194,4 +194,79 @@ export const adminService = {
     const response = await api.get('/admin/abandoned-carts/stats');
     return response.data;
   },
+
+  // Shipping Management
+  updateShippingStatus: async (orderId, status, notes) => {
+    const response = await api.post(`/admin/orders/${orderId}/shipping/status`, { status, notes });
+    return response.data;
+  },
+
+  createShipment: async (orderId, courierName, trackingNumber, notes) => {
+    const response = await api.post(`/admin/orders/${orderId}/shipping/create`, {
+      courier_name: courierName,
+      tracking_number: trackingNumber,
+      notes
+    });
+    return response.data;
+  },
+
+  updateShipmentDetails: async (orderId, courierName, trackingNumber, notes, reason) => {
+    const response = await api.put(`/admin/orders/${orderId}/shipping/details`, {
+      courier_name: courierName,
+      tracking_number: trackingNumber,
+      notes,
+      reason
+    });
+    return response.data;
+  },
+
+  getShippingHistory: async (orderId) => {
+    const response = await api.get(`/admin/orders/${orderId}/shipping/history`);
+    return response.data;
+  },
+
+  getNextValidStatuses: async (orderId) => {
+    const response = await api.get(`/admin/orders/${orderId}/shipping/next-statuses`);
+    return response.data;
+  },
+
+  // Delivery Zone Management
+  getAllDeliveryZones: async (pincode, category, productId, page = 1, limit = 50) => {
+    const params = { page, limit };
+    if (pincode) params.pincode = pincode;
+    if (category) params.category = category;
+    if (productId) params.product_id = productId;
+    const response = await api.get('/admin/delivery-zones', { params });
+    return response.data;
+  },
+
+  getDeliveryZoneById: async (id) => {
+    const response = await api.get(`/admin/delivery-zones/${id}`);
+    return response.data;
+  },
+
+  createDeliveryZone: async (zoneData) => {
+    const response = await api.post('/admin/delivery-zones', zoneData);
+    return response.data;
+  },
+
+  updateDeliveryZone: async (id, zoneData) => {
+    const response = await api.put(`/admin/delivery-zones/${id}`, zoneData);
+    return response.data;
+  },
+
+  deleteDeliveryZone: async (id) => {
+    const response = await api.delete(`/admin/delivery-zones/${id}`);
+    return response.data;
+  },
+
+  bulkImportDeliveryZones: async (zones) => {
+    const response = await api.post('/admin/delivery-zones/bulk-import', { zones });
+    return response.data;
+  },
+
+  getDeliveryZoneFilters: async () => {
+    const response = await api.get('/admin/delivery-zones/filters');
+    return response.data;
+  },
 };
