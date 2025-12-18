@@ -117,6 +117,69 @@ const Checkout = () => {
     setCouponError('');
   };
 
+  const handleTestPayment = async () => {
+    if (!selectedAddressId) {
+      showError('Please select a delivery address');
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      showError('Your cart is empty. Please add items to cart first.');
+      navigate('/cart');
+      return;
+    }
+
+    setProcessing(true);
+
+    try {
+      // Step 1: Create order intent (locks inventory and prices)
+      const orderIntentData = await orderIntentService.createOrderIntent(
+        selectedAddressId,
+        selectedAddressId,
+        appliedCoupon?.code || null
+      );
+
+      const orderIntent = orderIntentData.order_intent;
+
+      // Step 2: Simulate payment (test mode - bypasses Razorpay)
+      const result = await paymentService.simulateTestPayment(orderIntent.id);
+      
+      showSuccess('Test payment successful! Order confirmed.');
+      await refreshCart();
+      
+      // Reset processing state before navigation
+      setProcessing(false);
+      
+      // Navigate to order confirmation page
+      if (result.order_id) {
+        navigate(`/orders/${result.order_id}/confirmation`);
+      } else {
+        // Fallback to orders page if order_id not in response
+        navigate(`/account/orders`);
+      }
+    } catch (error) {
+      console.error('Error in test payment:', error);
+      console.error('Error response:', error.response?.data);
+      
+      // Get detailed error message
+      let errorMessage = 'Test payment failed. Please try again.';
+      if (error.response?.data) {
+        if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.errors && Array.isArray(error.response.data.errors)) {
+          errorMessage = error.response.data.errors.join(', ');
+        } else if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      showError(errorMessage);
+      setProcessing(false);
+    }
+  };
+
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
       showError('Please select a delivery address');
@@ -157,7 +220,13 @@ const Checkout = () => {
             // Reset processing state before navigation to ensure UI is responsive
             setProcessing(false);
             
-            navigate(`/account/orders`);
+            // Navigate to order confirmation page
+            if (result.order_id) {
+              navigate(`/orders/${result.order_id}/confirmation`);
+            } else {
+              // Fallback to orders page if order_id not in response
+              navigate(`/account/orders`);
+            }
           } catch (error) {
             console.error('Error verifying payment:', error);
             showError('Payment verification failed. Please contact support.');
@@ -454,6 +523,17 @@ const Checkout = () => {
               >
                 {processing ? 'Processing...' : 'Proceed to Payment'}
               </button>
+
+              {/* Test Mode Button (Only in Development) */}
+              {import.meta.env.DEV && (
+                <button
+                  onClick={handleTestPayment}
+                  disabled={processing || !selectedAddressId}
+                  className="w-full py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+                >
+                  {processing ? 'Processing...' : '🧪 Test Payment (Skip Razorpay)'}
+                </button>
+              )}
 
               <p className="text-xs text-gray-500 text-center mt-4">
                 By placing this order, you agree to our Terms & Conditions

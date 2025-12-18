@@ -92,14 +92,15 @@ const Orders = () => {
       ) : (
         <div className="space-y-4">
           {orders.map((order) => (
-            <div
+            <Link
               key={order.id}
-              className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+              to={`/account/orders/${order.id}`}
+              className="block border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
             >
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-4 mb-2">
-                    <h3 className="font-semibold text-gray-900">Order #{order.id.slice(0, 8)}</h3>
+                    <h3 className="font-semibold text-gray-900">Order #{order.order_number || order.id.slice(0, 8)}</h3>
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
                         order.status
@@ -111,9 +112,9 @@ const Orders = () => {
                   <p className="text-sm text-gray-600">
                     Placed on {formatDate(order.created_at)}
                   </p>
-                  {order.items && order.items.length > 0 && (
+                  {order.order_items && order.order_items.length > 0 && (
                     <p className="text-sm text-gray-600 mt-1">
-                      {order.items.length} item{order.items.length > 1 ? 's' : ''}
+                      {order.order_items.length} item{order.order_items.length > 1 ? 's' : ''}
                     </p>
                   )}
                 </div>
@@ -126,9 +127,15 @@ const Orders = () => {
                       {formatCurrency(order.total_amount + order.discount_amount)}
                     </p>
                   )}
+                  <p className="text-sm text-rose-600 mt-2 flex items-center justify-end gap-1">
+                    View Details
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </p>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

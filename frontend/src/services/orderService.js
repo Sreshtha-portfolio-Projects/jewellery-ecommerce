@@ -15,5 +15,15 @@ export const orderService = {
     const response = await api.get(`/orders/${id}`);
     return response.data;
   },
+
+  getOrderConfirmation: async (orderId) => {
+    const response = await api.get(`/orders/${orderId}/confirmation`);
+    return response.data;
+  },
+
+  getOrderInvoice: async (orderId) => {
+    const response = await api.get(`/orders/${orderId}/invoice`);
+    return response.data;
+  },
 };
 

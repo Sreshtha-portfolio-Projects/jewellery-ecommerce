@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createOrder, getOrders, getOrderById, updateOrderStatus } = require('../controllers/orderController');
+const { createOrder, getOrders, getOrderById, getOrderConfirmation, getOrderInvoice, updateOrderStatus } = require('../controllers/orderController');
 const { authenticateToken } = require('../middleware/auth');
 
 router.use(authenticateToken);
@@ -97,6 +97,69 @@ router.get('/', getOrders);
  *         description: Order not found
  */
 router.get('/:id', getOrderById);
+
+/**
+ * @swagger
+ * /api/orders/{id}/confirmation:
+ *   get:
+ *     summary: Get order confirmation details
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Order confirmation details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 order:
+ *                   type: object
+ *                 items:
+ *                   type: array
+ *                 shipping_address:
+ *                   type: object
+ *                 timeline:
+ *                   type: array
+ *                 estimated_delivery:
+ *                   type: object
+ *       404:
+ *         description: Order not found
+ */
+router.get('/:id/confirmation', getOrderConfirmation);
+
+/**
+ * @swagger
+ * /api/orders/{id}/invoice:
+ *   get:
+ *     summary: Get invoice data for order
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: Invoice data
+ *       400:
+ *         description: Invoice only available for paid orders
+ *       404:
+ *         description: Order not found
+ */
+router.get('/:id/invoice', getOrderInvoice);
 
 /**
  * @swagger

@@ -29,9 +29,23 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const response = await customerAuthService.login(email, password);
     if (response.token) {
-      const profile = await customerAuthService.getProfile();
-      setUser(profile);
-      return profile;
+      // Ensure token is stored before making profile request
+      // Add small delay to ensure localStorage is updated and axios interceptor picks it up
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      try {
+        const profile = await customerAuthService.getProfile();
+        setUser(profile);
+        return profile;
+      } catch (error) {
+        console.error('Error fetching profile after login:', error);
+        // If profile fetch fails but we have token, use the user data from login response
+        if (response.user) {
+          setUser(response.user);
+          return response.user;
+        }
+        throw error;
+      }
     }
     throw new Error('Login failed');
   };
@@ -39,9 +53,22 @@ export const AuthProvider = ({ children }) => {
   const signup = async (email, password, fullName, mobile) => {
     const response = await customerAuthService.signup(email, password, fullName, mobile);
     if (response.token) {
-      const profile = await customerAuthService.getProfile();
-      setUser(profile);
-      return profile;
+      // Ensure token is stored before making profile request
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      try {
+        const profile = await customerAuthService.getProfile();
+        setUser(profile);
+        return profile;
+      } catch (error) {
+        console.error('Error fetching profile after signup:', error);
+        // If profile fetch fails but we have token, use the user data from signup response
+        if (response.user) {
+          setUser(response.user);
+          return response.user;
+        }
+        throw error;
+      }
     }
     throw new Error('Signup failed');
   };

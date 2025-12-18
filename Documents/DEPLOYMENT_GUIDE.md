@@ -670,6 +670,7 @@ Content-Type: application/json
 {
   "notes": "Optional notes"
 }
+
 ```
 
 **Legacy Method (Still Supported):**

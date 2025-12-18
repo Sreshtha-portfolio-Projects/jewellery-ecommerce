@@ -20,8 +20,10 @@ import ResetPassword from './pages/ResetPassword';
 import AuthCallback from './pages/AuthCallback';
 import Profile from './pages/account/Profile';
 import CustomerOrders from './pages/account/Orders';
+import OrderDetail from './pages/account/OrderDetail';
 import Wishlist from './pages/account/Wishlist';
 import Addresses from './pages/account/Addresses';
+import OrderConfirmation from './pages/OrderConfirmation';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminProducts from './pages/admin/Products';
@@ -90,6 +92,16 @@ function App() {
           }
         />
         <Route
+          path="/orders/:orderId/confirmation"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <OrderConfirmation />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/about"
           element={
             <MainLayout>
@@ -142,6 +154,7 @@ function App() {
         >
           <Route path="profile" element={<Profile />} />
           <Route path="orders" element={<CustomerOrders />} />
+          <Route path="orders/:orderId" element={<OrderDetail />} />
           <Route path="wishlist" element={<Wishlist />} />
           <Route path="addresses" element={<Addresses />} />
         </Route>

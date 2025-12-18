@@ -349,9 +349,98 @@ const handleWebhook = async (req, res) => {
   }
 };
 
+/**
+ * TEST MODE: Simulate payment success (for local testing only)
+ * POST /api/payments/test/simulate-payment
+ * 
+ * This endpoint bypasses Razorpay and directly converts order intent to order.
+ * Only available when ENABLE_TEST_MODE=true in environment variables.
+ */
+const simulateTestPayment = async (req, res) => {
+  try {
+    // Check if test mode is enabled
+    if (process.env.ENABLE_TEST_MODE !== 'true') {
+      return res.status(403).json({ 
+        message: 'Test mode is disabled. Set ENABLE_TEST_MODE=true in .env to enable.' 
+      });
+    }
+
+    // Only allow in development
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({ 
+        message: 'Test mode is not available in production' 
+      });
+    }
+
+    const userId = req.user.userId;
+    const { orderIntentId } = req.body;
+
+    if (!orderIntentId) {
+      return res.status(400).json({ message: 'Order intent ID is required' });
+    }
+
+    // Get order intent
+    const { data: orderIntent, error: intentError } = await supabase
+      .from('order_intents')
+      .select('*')
+      .eq('id', orderIntentId)
+      .eq('user_id', userId)
+      .single();
+
+    if (intentError || !orderIntent) {
+      return res.status(404).json({ message: 'Order intent not found' });
+    }
+
+    // Check if already converted
+    if (orderIntent.status === 'CONVERTED') {
+      const { data: existingOrder } = await supabase
+        .from('orders')
+        .select('id, order_number')
+        .eq('order_intent_id', orderIntentId)
+        .single();
+      
+      if (existingOrder) {
+        return res.json({
+          verified: true,
+          order_id: existingOrder.id,
+          order_number: existingOrder.order_number,
+          message: 'Order already exists (test mode)',
+          test_mode: true
+        });
+      }
+    }
+
+    // Simulate payment details
+    const paymentDetails = {
+      razorpay_payment_id: `test_pay_${Date.now()}`,
+      razorpay_order_id: `test_order_${Date.now()}`,
+      razorpay_signature: 'test_signature',
+      method: 'test'
+    };
+
+    // Convert order intent to order
+    const order = await convertIntentToOrder(orderIntentId, paymentDetails);
+
+    res.json({
+      verified: true,
+      order_id: order.id,
+      order_number: order.order_number,
+      message: 'Payment simulated successfully (test mode)',
+      test_mode: true
+    });
+  } catch (error) {
+    console.error('Error simulating test payment:', error);
+    const errorMessage = process.env.NODE_ENV === 'production'
+      ? 'Error simulating payment'
+      : error.message || 'Error simulating payment';
+    res.status(500).json({ message: errorMessage });
+  }
+};
+
 module.exports = {
   createPaymentOrder,
   verifyPayment,
-  handleWebhook
+  handleWebhook,
+  simulateTestPayment
 };
 

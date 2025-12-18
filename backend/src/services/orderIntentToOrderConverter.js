@@ -91,16 +91,33 @@ const convertIntentToOrder = async (orderIntentId, paymentDetails = {}) => {
       throw new Error('Failed to create order from intent');
     }
 
-    // Create order items from cart snapshot
+    // Create order items from cart snapshot with variant information
     const orderItemsData = cartItems.map(item => {
       const product = item.product || item.products;
+      const variant = item.variant;
+      const variantId = variant?.id || item.variant_id || null;
+      
+      // Create variant snapshot for immutable record
+      const variantSnapshot = variant ? {
+        size: variant.size || null,
+        color: variant.color || null,
+        finish: variant.finish || null,
+        weight: variant.weight || null,
+        sku: variant.sku || null
+      } : null;
+      
+      // Use variant price if available, otherwise product price
+      const itemPrice = variant?.price_override || variant?.price || product?.price || 0;
+      
       return {
         order_id: order.id,
         product_id: item.product_id,
         product_name: product?.name || 'Unknown Product',
-        product_price: product?.price || item.variant?.price || 0,
+        product_price: itemPrice,
         quantity: item.quantity,
-        subtotal: (product?.price || item.variant?.price || 0) * item.quantity
+        subtotal: itemPrice * item.quantity,
+        variant_id: variantId,
+        variant_snapshot: variantSnapshot
       };
     });
 
