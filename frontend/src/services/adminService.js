@@ -269,4 +269,49 @@ export const adminService = {
     const response = await api.get('/admin/delivery-zones/filters');
     return response.data;
   },
+
+  // Returns Management
+  getAllReturnRequests: async (status, page = 1, limit = 50) => {
+    const params = { page, limit };
+    if (status) params.status = status;
+    const response = await api.get('/admin/returns', { params });
+    return response.data;
+  },
+
+  getReturnRequestDetails: async (id) => {
+    const response = await api.get(`/admin/returns/${id}`);
+    return response.data;
+  },
+
+  approveReturnRequest: async (id, returnInstructions, returnAddress) => {
+    const response = await api.put(`/admin/returns/${id}/approve`, {
+      returnInstructions,
+      returnAddress
+    });
+    return response.data;
+  },
+
+  rejectReturnRequest: async (id, rejectionReason) => {
+    const response = await api.put(`/admin/returns/${id}/reject`, {
+      rejectionReason
+    });
+    return response.data;
+  },
+
+  markReturnReceived: async (id) => {
+    const response = await api.put(`/admin/returns/${id}/received`);
+    return response.data;
+  },
+
+  initiateRefund: async (id) => {
+    const response = await api.put(`/admin/returns/${id}/initiate-refund`);
+    return response.data;
+  },
+
+  completeRefund: async (id, refundReference) => {
+    const response = await api.put(`/admin/returns/${id}/complete-refund`, {
+      refundReference
+    });
+    return response.data;
+  },
 };

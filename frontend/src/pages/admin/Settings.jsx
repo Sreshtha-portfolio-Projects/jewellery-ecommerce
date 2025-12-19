@@ -57,7 +57,7 @@ const Settings = () => {
     }
   };
 
-  const SettingInput = ({ category, key, setting }) => {
+  const SettingInput = ({ category, settingKey, setting }) => {
     const [value, setValue] = useState(setting.value);
 
     useEffect(() => {
@@ -74,14 +74,14 @@ const Settings = () => {
     };
 
     const handleSaveClick = () => {
-      handleSave(category, key, value);
+      handleSave(category, settingKey, value);
     };
 
     return (
       <div className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200">
         <div className="flex-1">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            {settingKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
           </label>
           {setting.description && (
             <p className="text-xs text-gray-500 mb-2">{setting.description}</p>
@@ -131,7 +131,7 @@ const Settings = () => {
     );
   }
 
-  const categories = ['pricing', 'tax', 'shipping', 'inventory', 'checkout'];
+  const categories = ['pricing', 'tax', 'shipping', 'inventory', 'checkout', 'returns', 'invoice'];
 
   return (
     <div className="p-8">
@@ -158,6 +158,7 @@ const Settings = () => {
               <SettingInput
                 key={key}
                 category={category}
+                settingKey={key}
                 setting={settings[category][key]}
               />
             ))}

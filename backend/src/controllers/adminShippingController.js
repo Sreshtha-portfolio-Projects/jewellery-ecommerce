@@ -253,6 +253,41 @@ const createShipment = async (req, res) => {
       console.error('Error logging audit:', auditError);
     }
 
+    // Generate invoice after shipment creation (if not already generated)
+    try {
+      if (!updatedOrder.invoice_id || !updatedOrder.invoice_url) {
+        const invoiceService = require('../services/invoiceService');
+        
+        // Get full order data for invoice generation
+        const { data: fullOrder, error: orderFetchError } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            order_items (
+              id,
+              product_id,
+              product_name,
+              product_price,
+              quantity,
+              subtotal,
+              variant_snapshot
+            ),
+            shipping_address:addresses!shipping_address_id (*),
+            billing_address:addresses!billing_address_id (*)
+          `)
+          .eq('id', id)
+          .single();
+
+        if (!orderFetchError && fullOrder) {
+          await invoiceService.generateAndStoreInvoice(fullOrder);
+          console.log(`Invoice generated for order ${id} after shipment creation`);
+        }
+      }
+    } catch (invoiceError) {
+      console.error('Error generating invoice after shipment creation:', invoiceError);
+      // Non-critical - don't fail the shipment creation
+    }
+
     res.json({
       message: 'Shipment created successfully',
       order: updatedOrder

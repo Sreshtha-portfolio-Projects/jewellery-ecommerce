@@ -9,6 +9,7 @@ const AdminLayout = () => {
     { path: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
     { path: '/admin/products', label: 'Products', icon: '💎' },
     { path: '/admin/orders', label: 'Orders', icon: '📦' },
+    { path: '/admin/returns', label: 'Returns', icon: '🔄' },
     { path: '/admin/analytics', label: 'Analytics', icon: '📈' },
     { path: '/admin/discounts', label: 'Discounts', icon: '🎫' },
     { path: '/admin/pricing-rules', label: 'Pricing Rules', icon: '💰' },

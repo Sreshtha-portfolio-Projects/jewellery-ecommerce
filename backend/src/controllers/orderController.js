@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const pricingEngine = require('../services/pricingEngine');
 
 // Valid order state transitions
 const VALID_TRANSITIONS = {
@@ -138,10 +139,12 @@ const createOrder = async (req, res) => {
       }
     }
 
-    // Calculate totals (BACKEND ONLY)
-    const shippingCost = 0; // Free shipping for now
-    const taxAmount = (subtotal - discountAmount) * 0.18; // 18% GST
-    const totalAmount = subtotal - discountAmount + shippingCost + taxAmount;
+    // Calculate totals (BACKEND ONLY) - using pricing engine for configurable values
+    const shippingCost = await pricingEngine.calculateShipping(subtotal - discountAmount);
+    const taxAmount = await pricingEngine.calculateTax(subtotal, discountAmount);
+    const totalAmount = await pricingEngine.roundPrice(
+      subtotal - discountAmount + shippingCost + taxAmount
+    );
     
     // Ensure total is never negative
     if (totalAmount < 0) {
@@ -179,7 +182,7 @@ const createOrder = async (req, res) => {
         subtotal,
         discount_amount: discountAmount,
         shipping_cost: shippingCost,
-        tax_amount: (subtotal - discountAmount) * 0.18, // 18% GST
+        tax_amount: taxAmount,
         total_amount: totalAmount,
         discount_code: finalDiscountCode,
         payment_status: 'pending', // Use 'pending' instead of 'NOT_APPLICABLE'
@@ -366,7 +369,7 @@ const getOrderById = async (req, res) => {
     );
 
     // Calculate estimated delivery date
-    const estimatedDelivery = calculateEstimatedDelivery(
+    const estimatedDelivery = await calculateEstimatedDelivery(
       order.created_at, 
       order.status || 'pending', 
       order.shipment_status || 'NOT_SHIPPED'
@@ -524,7 +527,7 @@ const getOrderConfirmation = async (req, res) => {
     );
 
     // Calculate estimated delivery date
-    const estimatedDelivery = calculateEstimatedDelivery(order.created_at, order.status, order.shipment_status);
+    const estimatedDelivery = await calculateEstimatedDelivery(order.created_at, order.status, order.shipment_status);
 
     // Format response
     const confirmationData = {
@@ -644,8 +647,8 @@ const getOrderStatusTimeline = (orderStatus, shipmentStatus, paymentStatus, orde
 /**
  * Calculate estimated delivery date
  */
-const calculateEstimatedDelivery = (orderCreatedAt, orderStatus, shipmentStatus) => {
-  // Default: 3-5 business days from order creation
+const calculateEstimatedDelivery = async (orderCreatedAt, orderStatus, shipmentStatus) => {
+  // Get delivery days from admin settings
   if (!orderCreatedAt) {
     return {
       min_date: null,
@@ -665,8 +668,9 @@ const calculateEstimatedDelivery = (orderCreatedAt, orderStatus, shipmentStatus)
     };
   }
   
-  const minDays = 3;
-  const maxDays = 5;
+  // Get configurable delivery days from settings
+  const minDays = await pricingEngine.getSetting('delivery_days_min', 3);
+  const maxDays = await pricingEngine.getSetting('delivery_days_max', 5);
 
   // Add business days (excluding weekends)
   const addBusinessDays = (date, days) => {
@@ -734,15 +738,16 @@ const formatDate = (date) => {
 };
 
 /**
- * Get invoice data for order
+ * Get invoice PDF for order
  * GET /api/orders/:orderId/invoice
  */
 const getOrderInvoice = async (req, res) => {
   try {
     const userId = req.user.userId;
     const { id: orderId } = req.params;
+    const invoiceService = require('../services/invoiceService');
 
-    // Get order with all details (reuse getOrderById logic)
+    // Get order with all details
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select(`
@@ -774,55 +779,24 @@ const getOrderInvoice = async (req, res) => {
       });
     }
 
-    // Format invoice data
-    const invoiceData = {
-      invoice_number: `INV-${order.order_number}`,
-      order_number: order.order_number,
-      invoice_date: new Date().toISOString(),
-      order_date: order.created_at,
-      seller: {
-        name: 'Aldorado Jewells',
-        address: 'Your Business Address',
-        gstin: 'GSTIN Number', // Add to admin settings later
-        phone: 'Customer Support Number',
-        email: 'support@aldoradojewells.com'
-      },
-      buyer: {
-        name: order.shipping_address?.full_name || 'Customer',
-        address: order.shipping_address ? [
-          order.shipping_address.address_line1,
-          order.shipping_address.address_line2,
-          `${order.shipping_address.city}, ${order.shipping_address.state} - ${order.shipping_address.pincode}`
-        ].filter(Boolean).join(', ') : 'N/A',
-        phone: order.shipping_address?.phone || 'N/A'
-      },
-      items: order.order_items.map(item => ({
-        name: item.product_name,
-        variant: item.variant_snapshot ? 
-          [item.variant_snapshot.size, item.variant_snapshot.color, item.variant_snapshot.finish]
-            .filter(Boolean).join(', ') : null,
-        quantity: item.quantity,
-        unit_price: parseFloat(item.product_price),
-        total: parseFloat(item.subtotal)
-      })),
-      pricing: {
-        subtotal: parseFloat(order.subtotal),
-        discount_amount: parseFloat(order.discount_amount || 0),
-        discount_code: order.discount_code || null,
-        tax_amount: parseFloat(order.tax_amount || 0),
-        shipping_cost: parseFloat(order.shipping_cost || 0),
-        total_amount: parseFloat(order.total_amount)
-      },
-      payment: {
-        method: order.payment_method || 'Online',
-        transaction_id: order.razorpay_payment_id ? order.razorpay_payment_id.substring(0, 8) + '****' : null,
-        paid_at: order.created_at
-      }
-    };
+    // Generate and store invoice if it doesn't exist
+    let invoiceData;
+    try {
+      invoiceData = await invoiceService.generateAndStoreInvoice(order);
+    } catch (invoiceError) {
+      console.error('Error generating invoice:', invoiceError);
+      return res.status(500).json({ message: 'Failed to generate invoice' });
+    }
 
-    res.json(invoiceData);
+    // Return invoice URL for download
+    res.json({
+      invoice_id: invoiceData.invoice_id,
+      invoice_url: invoiceData.invoice_url,
+      invoice_created_at: invoiceData.invoice_created_at,
+      order_number: order.order_number
+    });
   } catch (error) {
-    console.error('Error generating invoice:', error);
+    console.error('Error in getOrderInvoice:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -904,35 +878,87 @@ const updateOrderStatus = async (req, res) => {
       }
     }
 
-    // Update order status
-    const updateData = { status };
-    if (notes) updateData.notes = notes;
+    // Prevent modification of order financial data after payment
+    if (order.payment_status === 'paid' || order.status === 'paid') {
+      // Only allow status changes, not financial data changes
+      const updateData = { status };
+      if (notes) updateData.notes = notes;
 
-    const { data: updatedOrder, error: updateError } = await supabase
-      .from('orders')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
+      const { data: updatedOrder, error: updateError } = await supabase
+        .from('orders')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
 
-    if (updateError) {
-      console.error('Error updating order:', updateError);
-      return res.status(500).json({ message: 'Error updating order' });
+      if (updateError) {
+        console.error('Error updating order:', updateError);
+        return res.status(500).json({ message: 'Error updating order' });
+      }
+
+      // Log order status history with admin ID
+      await supabase.from('order_status_history').insert({
+        order_id: id,
+        from_status: order.status,
+        to_status: status,
+        changed_by: userId,
+        notes: notes || null
+      });
+
+      // Log audit
+      await supabase.from('audit_logs').insert({
+        user_id: userId,
+        action: 'order_updated',
+        entity_type: 'order',
+        entity_id: id,
+        old_values: { status: order.status },
+        new_values: { status: status },
+        ip_address: req.ip,
+        user_agent: req.get('user-agent')
+      });
+
+      res.json(updatedOrder);
+    } else {
+      // For unpaid orders, allow full update
+      const updateData = { status };
+      if (notes) updateData.notes = notes;
+
+      const { data: updatedOrder, error: updateError } = await supabase
+        .from('orders')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Error updating order:', updateError);
+        return res.status(500).json({ message: 'Error updating order' });
+      }
+
+      // Log order status history
+      await supabase.from('order_status_history').insert({
+        order_id: id,
+        from_status: order.status,
+        to_status: status,
+        changed_by: userId,
+        notes: notes || null
+      });
+
+      // Log audit
+      await supabase.from('audit_logs').insert({
+        user_id: userId,
+        action: 'order_updated',
+        entity_type: 'order',
+        entity_id: id,
+        old_values: { status: order.status },
+        new_values: { status: status },
+        ip_address: req.ip,
+        user_agent: req.get('user-agent')
+      });
+
+      res.json(updatedOrder);
     }
 
-    // Log audit
-    await supabase.from('audit_logs').insert({
-      user_id: userId,
-      action: 'order_updated',
-      entity_type: 'order',
-      entity_id: id,
-      old_values: { status: order.status },
-      new_values: { status: status },
-      ip_address: req.ip,
-      user_agent: req.get('user-agent')
-    });
-
-    res.json(updatedOrder);
   } catch (error) {
     console.error('Error in updateOrderStatus:', error);
     res.status(500).json({ message: 'Internal server error' });

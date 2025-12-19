@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { orderService } from '../../services/orderService';
-import { showError } from '../../utils/toast';
+import { returnService } from '../../services/returnService';
+import { showError, showSuccess } from '../../utils/toast';
 
 const OrderDetail = () => {
   const { orderId } = useParams();
@@ -11,6 +12,11 @@ const OrderDetail = () => {
   const [loading, setLoading] = useState(true);
   const [orderData, setOrderData] = useState(null);
   const [error, setError] = useState(null);
+  const [returnRequest, setReturnRequest] = useState(null);
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnReason, setReturnReason] = useState('');
+  const [returnNote, setReturnNote] = useState('');
+  const [submittingReturn, setSubmittingReturn] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -25,6 +31,7 @@ const OrderDetail = () => {
     }
 
     fetchOrderDetail();
+    fetchReturnRequest();
   }, [orderId, isAuthenticated, navigate]);
 
   const fetchOrderDetail = async () => {
@@ -38,6 +45,40 @@ const OrderDetail = () => {
       setError(err.response?.data?.message || 'Failed to load order details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReturnRequest = async () => {
+    try {
+      const data = await returnService.getReturnRequestByOrder(orderId);
+      setReturnRequest(data);
+    } catch (err) {
+      // Return request doesn't exist yet, which is fine
+      if (err.response?.status !== 404) {
+        console.error('Error fetching return request:', err);
+      }
+    }
+  };
+
+  const handleRequestReturn = async () => {
+    if (!returnReason) {
+      showError('Please select a return reason');
+      return;
+    }
+
+    try {
+      setSubmittingReturn(true);
+      const data = await returnService.createReturnRequest(orderId, returnReason, returnNote);
+      setReturnRequest(data);
+      setShowReturnModal(false);
+      setReturnReason('');
+      setReturnNote('');
+      showSuccess('Return request submitted successfully');
+    } catch (err) {
+      console.error('Error creating return request:', err);
+      showError(err.response?.data?.message || 'Failed to submit return request');
+    } finally {
+      setSubmittingReturn(false);
     }
   };
 
@@ -89,218 +130,17 @@ const OrderDetail = () => {
     try {
       const invoiceData = await orderService.getOrderInvoice(orderId);
       
-      // Create a printable invoice HTML
-      const invoiceHTML = generateInvoiceHTML(invoiceData);
-      
-      // Open in new window for printing
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(invoiceHTML);
-      printWindow.document.close();
-      
-      // Wait for content to load, then print
-      printWindow.onload = () => {
-        setTimeout(() => {
-          printWindow.print();
-        }, 250);
-      };
+      if (invoiceData.invoice_url) {
+        // Open PDF in new tab for download
+        window.open(invoiceData.invoice_url, '_blank');
+      } else {
+        showError('Invoice URL not available');
+      }
     } catch (error) {
       console.error('Error downloading invoice:', error);
       const errorMessage = error.response?.data?.message || 'Failed to download invoice';
       showError(errorMessage);
     }
-  };
-
-  const generateInvoiceHTML = (invoice) => {
-    // Helper functions for invoice HTML
-    const formatInvoiceDate = (dateString) => {
-      if (!dateString) return '';
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-IN', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
-    };
-
-    const formatInvoiceCurrency = (amount) => {
-      return new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR',
-        maximumFractionDigits: 0
-      }).format(amount);
-    };
-
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Invoice - ${invoice.invoice_number}</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-      color: #333;
-    }
-    .header {
-      border-bottom: 2px solid #B8860B;
-      padding-bottom: 20px;
-      margin-bottom: 30px;
-    }
-    .header h1 {
-      color: #B8860B;
-      margin: 0;
-    }
-    .invoice-info {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 30px;
-    }
-    .seller-info, .buyer-info {
-      flex: 1;
-    }
-    .seller-info {
-      margin-right: 20px;
-    }
-    .section-title {
-      font-weight: bold;
-      margin-bottom: 10px;
-      color: #B8860B;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-    }
-    th, td {
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid #ddd;
-    }
-    th {
-      background-color: #f5f5f5;
-      font-weight: bold;
-    }
-    .text-right {
-      text-align: right;
-    }
-    .total-section {
-      margin-top: 20px;
-      border-top: 2px solid #B8860B;
-      padding-top: 20px;
-    }
-    .total-row {
-      display: flex;
-      justify-content: space-between;
-      margin: 10px 0;
-    }
-    .grand-total {
-      font-size: 1.2em;
-      font-weight: bold;
-      color: #B8860B;
-    }
-    @media print {
-      body {
-        padding: 0;
-      }
-      .no-print {
-        display: none;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>Aldorado Jewells</h1>
-    <p>Invoice ${invoice.invoice_number}</p>
-  </div>
-
-  <div class="invoice-info">
-    <div class="seller-info">
-      <div class="section-title">Sold By:</div>
-      <p><strong>${invoice.seller.name}</strong></p>
-      <p>${invoice.seller.address}</p>
-      <p>GSTIN: ${invoice.seller.gstin}</p>
-      <p>Phone: ${invoice.seller.phone}</p>
-      <p>Email: ${invoice.seller.email}</p>
-    </div>
-    <div class="buyer-info">
-      <div class="section-title">Bill To:</div>
-      <p><strong>${invoice.buyer.name}</strong></p>
-      <p>${invoice.buyer.address}</p>
-      <p>Phone: ${invoice.buyer.phone}</p>
-    </div>
-  </div>
-
-  <div>
-    <p><strong>Order Number:</strong> ${invoice.order_number}</p>
-    <p><strong>Invoice Date:</strong> ${formatInvoiceDate(invoice.invoice_date)}</p>
-    <p><strong>Order Date:</strong> ${formatInvoiceDate(invoice.order_date)}</p>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Item</th>
-        <th>Variant</th>
-        <th class="text-right">Quantity</th>
-        <th class="text-right">Unit Price</th>
-        <th class="text-right">Total</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${invoice.items.map(item => `
-        <tr>
-          <td>${item.name}</td>
-          <td>${item.variant || '-'}</td>
-          <td class="text-right">${item.quantity}</td>
-          <td class="text-right">${formatInvoiceCurrency(item.unit_price)}</td>
-          <td class="text-right">${formatInvoiceCurrency(item.total)}</td>
-        </tr>
-      `).join('')}
-    </tbody>
-  </table>
-
-  <div class="total-section">
-    <div class="total-row">
-      <span>Subtotal:</span>
-      <span>${formatInvoiceCurrency(invoice.pricing.subtotal)}</span>
-    </div>
-    ${invoice.pricing.discount_amount > 0 ? `
-    <div class="total-row">
-      <span>Discount ${invoice.pricing.discount_code ? `(${invoice.pricing.discount_code})` : ''}:</span>
-      <span>-${formatInvoiceCurrency(invoice.pricing.discount_amount)}</span>
-    </div>
-    ` : ''}
-    <div class="total-row">
-      <span>Tax (GST):</span>
-      <span>${formatInvoiceCurrency(invoice.pricing.tax_amount)}</span>
-    </div>
-    <div class="total-row">
-      <span>Shipping:</span>
-      <span>${invoice.pricing.shipping_cost > 0 ? formatInvoiceCurrency(invoice.pricing.shipping_cost) : 'Free'}</span>
-    </div>
-    <div class="total-row grand-total">
-      <span>Total Amount:</span>
-      <span>${formatInvoiceCurrency(invoice.pricing.total_amount)}</span>
-    </div>
-  </div>
-
-  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
-    <p><strong>Payment Details:</strong></p>
-    <p>Payment Method: ${invoice.payment.method}</p>
-    ${invoice.payment.transaction_id ? `<p>Transaction ID: ${invoice.payment.transaction_id}</p>` : ''}
-    <p>Payment Date: ${formatInvoiceDate(invoice.payment.paid_at)}</p>
-  </div>
-
-  <div style="margin-top: 30px; text-align: center; color: #666; font-size: 0.9em;">
-    <p>Thank you for your purchase!</p>
-    <p>This is a computer-generated invoice and does not require a signature.</p>
-  </div>
-</body>
-</html>
-    `;
   };
 
   if (loading) {
@@ -711,7 +551,7 @@ const OrderDetail = () => {
               {payment.status === 'paid' && (
                 <button
                   onClick={handleDownloadInvoice}
-                  className="w-full py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium flex items-center justify-center gap-2 mb-3"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -719,10 +559,115 @@ const OrderDetail = () => {
                   Download Invoice
                 </button>
               )}
+
+              {/* Request Return Button */}
+              {shipping.status === 'DELIVERED' && !returnRequest && (
+                <button
+                  onClick={() => setShowReturnModal(true)}
+                  className="w-full py-3 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-colors font-medium flex items-center justify-center gap-2 border border-gray-300"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 15v-1a4 4 0 00-4-4H8m0 0l3 3m-3-3l3-3m5 13H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Request Return
+                </button>
+              )}
+
+              {/* Return Request Status */}
+              {returnRequest && (
+                <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <h3 className="font-semibold text-blue-900">Return Request</h3>
+                  </div>
+                  <p className="text-sm text-blue-800 mb-2">
+                    Status: <span className="font-semibold">{returnRequest.return_status.replace(/_/g, ' ')}</span>
+                  </p>
+                  {returnRequest.return_reason && (
+                    <p className="text-sm text-blue-700">Reason: {returnRequest.return_reason}</p>
+                  )}
+                  {returnRequest.return_instructions && (
+                    <div className="mt-2 p-2 bg-white rounded border border-blue-200">
+                      <p className="text-xs font-semibold text-blue-900 mb-1">Return Instructions:</p>
+                      <p className="text-xs text-blue-800">{returnRequest.return_instructions}</p>
+                      {returnRequest.return_address && (
+                        <p className="text-xs text-blue-800 mt-1">{returnRequest.return_address}</p>
+                      )}
+                    </div>
+                  )}
+                  {returnRequest.rejection_reason && (
+                    <div className="mt-2 p-2 bg-red-50 rounded border border-red-200">
+                      <p className="text-xs font-semibold text-red-900 mb-1">Rejection Reason:</p>
+                      <p className="text-xs text-red-800">{returnRequest.rejection_reason}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Return Request Modal */}
+      {showReturnModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h2 className="text-2xl font-serif font-bold text-gray-900 mb-4">Request Return</h2>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Return Reason <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={returnReason}
+                onChange={(e) => setReturnReason(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+              >
+                <option value="">Select a reason</option>
+                <option value="Size issue">Size issue</option>
+                <option value="Damaged item">Damaged item</option>
+                <option value="Not as expected">Not as expected</option>
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Additional Notes (Optional)
+              </label>
+              <textarea
+                value={returnNote}
+                onChange={(e) => setReturnNote(e.target.value)}
+                rows={4}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                placeholder="Please provide any additional details about your return request..."
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowReturnModal(false);
+                  setReturnReason('');
+                  setReturnNote('');
+                }}
+                className="flex-1 py-2 px-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                disabled={submittingReturn}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRequestReturn}
+                disabled={submittingReturn || !returnReason}
+                className="flex-1 py-2 px-4 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {submittingReturn ? 'Submitting...' : 'Submit Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
