@@ -204,6 +204,63 @@ const options = {
             message: { type: 'string' }
           }
         },
+        ReturnRequest: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            order_id: { type: 'string', format: 'uuid' },
+            user_id: { type: 'string', format: 'uuid' },
+            return_reason: { type: 'string' },
+            return_note: { type: 'string', nullable: true },
+            status: { type: 'string', enum: ['NONE', 'REQUESTED', 'APPROVED', 'REJECTED', 'RECEIVED', 'REFUND_INITIATED', 'REFUNDED'] },
+            refund_amount: { type: 'number', format: 'decimal', nullable: true },
+            refund_reference: { type: 'string', nullable: true },
+            created_at: { type: 'string', format: 'date-time' },
+            updated_at: { type: 'string', format: 'date-time' }
+          }
+        },
+        Shipment: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            order_id: { type: 'string', format: 'uuid' },
+            courier_name: { type: 'string' },
+            tracking_id: { type: 'string' },
+            status: { type: 'string', enum: ['PENDING', 'SHIPPED', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'DELIVERED', 'FAILED'] },
+            shipped_at: { type: 'string', format: 'date-time', nullable: true },
+            delivered_at: { type: 'string', format: 'date-time', nullable: true },
+            created_at: { type: 'string', format: 'date-time' }
+          }
+        },
+        DeliveryZone: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            zone_name: { type: 'string' },
+            state: { type: 'string' },
+            city: { type: 'string', nullable: true },
+            postal_code: { type: 'string', nullable: true },
+            delivery_days_min: { type: 'integer' },
+            delivery_days_max: { type: 'integer' },
+            shipping_charge: { type: 'number', format: 'decimal' },
+            is_active: { type: 'boolean' }
+          }
+        },
+        AuditLog: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            user_id: { type: 'string', format: 'uuid', nullable: true },
+            action: { type: 'string' },
+            entity_type: { type: 'string' },
+            entity_id: { type: 'string', format: 'uuid' },
+            old_values: { type: 'object', nullable: true },
+            new_values: { type: 'object', nullable: true },
+            ip_address: { type: 'string', nullable: true },
+            user_agent: { type: 'string', nullable: true },
+            created_at: { type: 'string', format: 'date-time' }
+          }
+        },
         Error: {
           type: 'object',
           properties: {
@@ -215,6 +272,7 @@ const options = {
     },
     tags: [
       { name: 'General', description: 'General API endpoints' },
+      { name: 'Health', description: 'Health check and system status endpoints' },
       { name: 'Authentication', description: 'Admin and customer authentication endpoints' },
       { name: 'Products', description: 'Public product endpoints' },
       { name: 'Admin Products', description: 'Admin product management endpoints' },
@@ -228,8 +286,14 @@ const options = {
       { name: 'Reviews', description: 'Product reviews and ratings' },
       { name: 'Delivery', description: 'Delivery and shipping information' },
       { name: 'Shipments', description: 'Shipment and tracking management' },
+      { name: 'Returns', description: 'Customer return request management' },
+      { name: 'Admin Returns', description: 'Admin return request processing' },
       { name: 'Admin', description: 'Admin dashboard, analytics, settings, inventory, and abandoned carts' },
-      { name: 'Pricing Rules', description: 'Dynamic pricing rules management' }
+      { name: 'Admin Settings', description: 'System configuration and settings management' },
+      { name: 'Admin Users', description: 'User and role management' },
+      { name: 'Admin Audit', description: 'Audit log access and management' },
+      { name: 'Pricing Rules', description: 'Dynamic pricing rules management' },
+      { name: 'Product Pairings', description: 'Product pairing and recommendations' }
     ]
   },
   apis: ['./src/routes/*.js', './src/server.js'] // Paths to files containing OpenAPI definitions

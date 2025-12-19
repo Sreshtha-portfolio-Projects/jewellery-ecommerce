@@ -27,6 +27,8 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const returnRoutes = require('./routes/returnRoutes');
 const adminReturnRoutes = require('./routes/adminReturnRoutes');
 const { cartActivityRouter, adminAbandonedCartRouter } = require('./routes/abandonedCartRoutes');
+const healthRoutes = require('./routes/healthRoutes');
+const adminAuditRoutes = require('./routes/adminAuditRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -120,6 +122,44 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customSiteTitle: 'Aldorado Jewells API Documentation'
 }));
 
+// Health check routes (public, no auth required)
+app.use('/health', healthRoutes);
+
+// Simple health check endpoint at /api/health (for admin dashboard)
+const { getSimpleHealth } = require('./controllers/healthController');
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     summary: Simple system health check
+ *     description: Returns basic health status (status, api, database, timestamp)
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Health status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   enum: [ok, degraded]
+ *                   example: ok
+ *                 api:
+ *                   type: string
+ *                   enum: [up]
+ *                   example: up
+ *                 database:
+ *                   type: string
+ *                   enum: [up, down]
+ *                   example: up
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ */
+app.get('/api/health', getSimpleHealth);
+
 // API Routes
 app.use('/api/auth/admin', authRoutes); // Admin login
 app.use('/api/auth', customerAuthRoutes); // Customer auth (unified)
@@ -142,6 +182,7 @@ app.use('/api/admin/inventory', adminInventoryRoutes);
 app.use('/api/admin/users', adminUserRoutes);
 app.use('/api/admin/returns', adminReturnRoutes);
 app.use('/api/admin', adminAbandonedCartRouter);
+app.use('/api/admin/audit-logs', adminAuditRoutes);
 app.use('/api/order-intents', orderIntentRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/returns', returnRoutes);
@@ -155,7 +196,11 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     documentation: '/api-docs',
     endpoints: {
-      health: '/health',
+      health: {
+        comprehensive: '/health',
+        liveness: '/health/live',
+        readiness: '/health/ready'
+      },
       debug: '/api/debug/routes',
       products: '/api/products',
       auth: {
@@ -184,19 +229,8 @@ app.get('/', (req, res) => {
   });
 });
 
-/**
- * @swagger
- * /health:
- *   get:
- *     summary: Health check endpoint
- *     tags: [General]
- *     responses:
- *       200:
- *         description: Server is running
- */
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Server is running' });
-});
+// Health check endpoint is now handled by healthRoutes
+// Legacy endpoint redirects to comprehensive health check
 
 // Debug endpoint to list registered routes
 app.get('/api/debug/routes', (req, res) => {
@@ -278,6 +312,8 @@ app.get('/api/debug/routes', (req, res) => {
       routes.push(
         'GET /',
         'GET /health',
+        'GET /health/live',
+        'GET /health/ready',
         'GET /api/debug/routes',
         'POST /api/auth/signup',
         'POST /api/auth/login',

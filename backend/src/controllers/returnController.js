@@ -1,19 +1,10 @@
 const supabase = require('../config/supabase');
+const configService = require('../services/configService');
+const auditService = require('../services/auditService');
 
-// Valid return state transitions
-const VALID_RETURN_TRANSITIONS = {
-  NONE: ['REQUESTED'],
-  REQUESTED: ['APPROVED', 'REJECTED'],
-  APPROVED: ['RECEIVED'],
-  REJECTED: [],
-  RECEIVED: ['REFUND_INITIATED'],
-  REFUND_INITIATED: ['REFUNDED'],
-  REFUNDED: []
-};
-
-const validateReturnTransition = (fromStatus, toStatus) => {
-  const allowed = VALID_RETURN_TRANSITIONS[fromStatus] || [];
-  return allowed.includes(toStatus);
+// Validate return transition using config service (no hardcoded values)
+const validateReturnTransition = async (fromStatus, toStatus) => {
+  return await configService.validateReturnTransition(fromStatus, toStatus);
 };
 
 /**
@@ -129,15 +120,7 @@ const createReturnRequest = async (req, res) => {
     });
 
     // Log audit
-    await supabase.from('audit_logs').insert({
-      user_id: userId,
-      action: 'return_requested',
-      entity_type: 'return_request',
-      entity_id: returnRequest.id,
-      new_values: { return_status: 'REQUESTED', return_reason: returnReason },
-      ip_address: req.ip,
-      user_agent: req.get('user-agent')
-    });
+    await auditService.logReturnStatusChange(returnRequest.id, userId, 'NONE', 'REQUESTED', req, `Return requested. Reason: ${returnReason}`);
 
     res.status(201).json(returnRequest);
   } catch (error) {
@@ -337,7 +320,8 @@ const approveReturnRequest = async (req, res) => {
     }
 
     // Validate transition
-    if (!validateReturnTransition(returnRequest.return_status, 'APPROVED')) {
+    const isValidTransition = await validateReturnTransition(returnRequest.return_status, 'APPROVED');
+    if (!isValidTransition) {
       return res.status(400).json({ 
         message: `Cannot approve return request. Current status: ${returnRequest.return_status}` 
       });
@@ -372,16 +356,7 @@ const approveReturnRequest = async (req, res) => {
     });
 
     // Log audit
-    await supabase.from('audit_logs').insert({
-      user_id: userId,
-      action: 'return_approved',
-      entity_type: 'return_request',
-      entity_id: id,
-      old_values: { return_status: returnRequest.return_status },
-      new_values: { return_status: 'APPROVED' },
-      ip_address: req.ip,
-      user_agent: req.get('user-agent')
-    });
+    await auditService.logReturnStatusChange(id, userId, returnRequest.return_status, 'APPROVED', req, `Return approved by admin. Instructions: ${returnInstructions}`);
 
     res.json(updatedReturn);
   } catch (error) {
@@ -450,16 +425,7 @@ const rejectReturnRequest = async (req, res) => {
     });
 
     // Log audit
-    await supabase.from('audit_logs').insert({
-      user_id: userId,
-      action: 'return_rejected',
-      entity_type: 'return_request',
-      entity_id: id,
-      old_values: { return_status: returnRequest.return_status },
-      new_values: { return_status: 'REJECTED', rejection_reason: rejectionReason },
-      ip_address: req.ip,
-      user_agent: req.get('user-agent')
-    });
+    await auditService.logReturnStatusChange(id, userId, returnRequest.return_status, 'REJECTED', req, `Return rejected. Reason: ${rejectionReason}`);
 
     res.json(updatedReturn);
   } catch (error) {
@@ -489,7 +455,8 @@ const markReturnReceived = async (req, res) => {
     }
 
     // Validate transition
-    if (!validateReturnTransition(returnRequest.return_status, 'RECEIVED')) {
+    const isValidTransition = await validateReturnTransition(returnRequest.return_status, 'RECEIVED');
+    if (!isValidTransition) {
       return res.status(400).json({ 
         message: `Cannot mark as received. Current status: ${returnRequest.return_status}` 
       });
@@ -522,16 +489,7 @@ const markReturnReceived = async (req, res) => {
     });
 
     // Log audit
-    await supabase.from('audit_logs').insert({
-      user_id: userId,
-      action: 'return_received',
-      entity_type: 'return_request',
-      entity_id: id,
-      old_values: { return_status: returnRequest.return_status },
-      new_values: { return_status: 'RECEIVED' },
-      ip_address: req.ip,
-      user_agent: req.get('user-agent')
-    });
+    await auditService.logReturnStatusChange(id, userId, returnRequest.return_status, 'RECEIVED', req, 'Return item received and inspected');
 
     res.json(updatedReturn);
   } catch (error) {
@@ -594,16 +552,7 @@ const initiateRefund = async (req, res) => {
     });
 
     // Log audit
-    await supabase.from('audit_logs').insert({
-      user_id: userId,
-      action: 'refund_initiated',
-      entity_type: 'return_request',
-      entity_id: id,
-      old_values: { return_status: returnRequest.return_status },
-      new_values: { return_status: 'REFUND_INITIATED' },
-      ip_address: req.ip,
-      user_agent: req.get('user-agent')
-    });
+    await auditService.logReturnStatusChange(id, userId, returnRequest.return_status, 'REFUND_INITIATED', req, 'Refund process initiated');
 
     res.json(updatedReturn);
   } catch (error) {
@@ -638,7 +587,8 @@ const completeRefund = async (req, res) => {
     }
 
     // Validate transition
-    if (!validateReturnTransition(returnRequest.return_status, 'REFUNDED')) {
+    const isValidTransition = await validateReturnTransition(returnRequest.return_status, 'REFUNDED');
+    if (!isValidTransition) {
       return res.status(400).json({ 
         message: `Cannot complete refund. Current status: ${returnRequest.return_status}` 
       });
@@ -673,20 +623,7 @@ const completeRefund = async (req, res) => {
     });
 
     // Log audit
-    await supabase.from('audit_logs').insert({
-      user_id: userId,
-      action: 'refund_completed',
-      entity_type: 'return_request',
-      entity_id: id,
-      old_values: { return_status: returnRequest.return_status },
-      new_values: { 
-        return_status: 'REFUNDED', 
-        refund_reference: refundReference,
-        refund_date: updatedReturn.refund_date
-      },
-      ip_address: req.ip,
-      user_agent: req.get('user-agent')
-    });
+    await auditService.logRefundCompleted(id, userId, refundReference, req);
 
     res.json(updatedReturn);
   } catch (error) {

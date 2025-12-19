@@ -1,36 +1,19 @@
 const supabase = require('../config/supabase');
+const configService = require('../services/configService');
+const auditService = require('../services/auditService');
 
-// Valid shipping state transitions (strict sequential)
-const SHIPPING_STATE_MACHINE = {
-  NOT_SHIPPED: ['PROCESSING'],
-  PROCESSING: ['SHIPPED'],
-  SHIPPED: ['IN_TRANSIT'],
-  IN_TRANSIT: ['OUT_FOR_DELIVERY'],
-  OUT_FOR_DELIVERY: ['DELIVERED'],
-  DELIVERED: ['RETURNED'],
-  RETURNED: [] // Terminal state
+/**
+ * Validate shipping status transition (uses config service - no hardcoded values)
+ */
+const validateShippingTransition = async (fromStatus, toStatus) => {
+  return await configService.validateShippingTransition(fromStatus, toStatus);
 };
 
 /**
- * Validate shipping status transition
+ * Get next valid shipping status (uses config service - no hardcoded values)
  */
-const validateShippingTransition = (fromStatus, toStatus) => {
-  if (!fromStatus) {
-    fromStatus = 'NOT_SHIPPED';
-  }
-  
-  const allowed = SHIPPING_STATE_MACHINE[fromStatus] || [];
-  return allowed.includes(toStatus);
-};
-
-/**
- * Get next valid shipping status
- */
-const getNextValidStatus = (currentStatus) => {
-  if (!currentStatus) {
-    currentStatus = 'NOT_SHIPPED';
-  }
-  return SHIPPING_STATE_MACHINE[currentStatus] || [];
+const getNextValidStatus = async (currentStatus) => {
+  return await configService.getNextShippingStatuses(currentStatus);
 };
 
 /**
@@ -68,8 +51,9 @@ const updateShippingStatus = async (req, res) => {
     const currentStatus = order.shipment_status || 'NOT_SHIPPED';
 
     // Validate transition
-    if (!validateShippingTransition(currentStatus, status)) {
-      const nextValid = getNextValidStatus(currentStatus);
+    const isValidTransition = await validateShippingTransition(currentStatus, status);
+    if (!isValidTransition) {
+      const nextValid = await getNextValidStatus(currentStatus);
       return res.status(400).json({ 
         message: `Invalid status transition. Current status: ${currentStatus}. Valid next status: ${nextValid.join(', ') || 'none'}`,
         currentStatus,
@@ -119,21 +103,7 @@ const updateShippingStatus = async (req, res) => {
     }
 
     // Log audit
-    try {
-      await supabase.from('audit_logs').insert({
-        user_id: adminId,
-        action: 'shipping_status_updated',
-        entity_type: 'order',
-        entity_id: id,
-        old_values: { shipment_status: currentStatus },
-        new_values: { shipment_status: status, notes: notes || null },
-        ip_address: req.ip,
-        user_agent: req.get('user-agent')
-      });
-    } catch (auditError) {
-      console.error('Error logging audit:', auditError);
-      // Non-critical
-    }
+    await auditService.logShippingStatusChange(id, adminId, currentStatus, status, req, notes);
 
     res.json({
       message: 'Shipping status updated successfully',
@@ -465,7 +435,7 @@ const getNextValidStatuses = async (req, res) => {
     }
 
     const currentStatus = order.shipment_status || 'NOT_SHIPPED';
-    const nextStatuses = getNextValidStatus(currentStatus);
+    const nextStatuses = await getNextValidStatus(currentStatus);
 
     res.json({
       currentStatus,

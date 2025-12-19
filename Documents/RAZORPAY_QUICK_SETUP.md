@@ -1,16 +1,16 @@
-# Razorpay Quick Setup Guide - You're Already Halfway There! 🎉
+# Razorpay Quick Setup Guide - You're Already Halfway There
 
 
 API KEY = rzp_test_RsoH0eYG1eQ6Sy
 Test KEY SECRET+ HLgHgnKobgPYW49o8clgJWJV
 **Good news**: Your code is already configured for Razorpay! You just need to add your keys and set up the webhook.
 
-## ✅ What You've Already Done
-- ✅ Created Razorpay account
-- ✅ On test dashboard
-- ✅ Code is already set up (no changes needed)
+## What You've Already Done
+- Created Razorpay account
+- On test dashboard
+- Code is already set up (no changes needed)
 
-## 📋 What You Need to Do Now
+## What You Need to Do Now
 
 ### Step 1: Get Your Test Keys from Razorpay Dashboard
 
@@ -90,14 +90,14 @@ RAZORPAY_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxx
    - Any name
 4. **Check Razorpay Dashboard** → Webhooks → Recent Deliveries to see if webhook was received
 
-## ✅ That's It!
+## That's It
 
 Your Razorpay integration is now fully configured for **test mode**. You can:
 - ✅ Accept test payments
 - ✅ Test the full payment flow
 - ✅ Verify webhooks are working
 
-## 🔄 Later: Switch to Live Mode (When Ready)
+## Later: Switch to Live Mode (When Ready)
 
 When you're ready to accept real payments:
 
@@ -109,7 +109,7 @@ When you're ready to accept real payments:
 
 **Important**: Test thoroughly in test mode first! Only switch to live when everything works perfectly.
 
-## 🆘 Troubleshooting
+## Troubleshooting
 
 **Problem: "Invalid Key ID" error**
 - ✅ Check you copied the full Key ID (starts with `rzp_test_...`)

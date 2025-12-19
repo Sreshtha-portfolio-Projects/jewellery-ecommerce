@@ -1,6 +1,6 @@
 # Admin Product Management System - Implementation Guide
 
-## ✅ What Has Been Implemented
+## What Has Been Implemented
 
 ### 1. Database Schema ✅
 - **File**: `supabase-product-variants-pricing.sql`
@@ -103,7 +103,7 @@
 **Current**: Accepts `image_url` directly
 **Needed**: Supabase Storage integration for actual file uploads
 
-## 📋 Setup Instructions
+## Setup Instructions
 
 ### Step 1: Install Dependencies
 
@@ -137,7 +137,7 @@ Use Postman or curl to test:
 4. **Add Bulk Import/Export UI**
 5. **Test Pricing Rules Engine**
 
-## 📝 Notes
+## Notes
 
 - All admin routes require authentication (`authenticateToken` + `requireAdmin`)
 - Product deletion is soft delete (sets `is_active = false`)
@@ -145,7 +145,7 @@ Use Postman or curl to test:
 - Variants have unique constraint on (product_id, size, color, finish)
 - Stock is managed at variant level, not product level
 
-## 🔐 Security
+## Security
 
 - All admin operations are logged in `audit_logs` table
 - Input validation on all endpoints

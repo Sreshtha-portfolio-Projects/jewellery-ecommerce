@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const configService = require('../services/configService');
 
 /**
  * Get all admin settings
@@ -127,6 +128,9 @@ const updateSetting = async (req, res) => {
       new_values: { value: validatedValue }
     });
 
+    // Clear config cache for this setting
+    configService.clearCache(key);
+
     res.json({ message: 'Setting updated successfully', setting });
   } catch (error) {
     console.error('Error in updateSetting:', error);
@@ -205,6 +209,11 @@ const bulkUpdateSettings = async (req, res) => {
       action: 'settings_bulk_updated',
       entity_type: 'admin_settings',
       new_values: { updated_keys: updates.map(u => u.key) }
+    });
+
+    // Clear config cache for all updated settings
+    updates.forEach(update => {
+      configService.clearCache(update.key);
     });
 
     res.json({

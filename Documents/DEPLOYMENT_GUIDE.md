@@ -2,7 +2,7 @@
 
 This guide walks you through deploying your jewellery e-commerce platform step-by-step, starting with basic deployment on Vercel (frontend) and Render (backend), then adding webhooks, Cloudflare, and other integrations.
 
-## 📋 Table of Contents
+## Table of Contents
 
 1. [Prerequisites](#prerequisites)
 2. [Phase 1: Initial Deployment](#phase-1-initial-deployment)
@@ -22,12 +22,12 @@ This guide walks you through deploying your jewellery e-commerce platform step-b
 
 Before starting, ensure you have:
 
-- ✅ **GitHub Account** - Your code should be in a GitHub repository
-- ✅ **Vercel Account** - Sign up at [vercel.com](https://vercel.com) (free tier works)
-- ✅ **Render Account** - Sign up at [render.com](https://render.com) (free tier works)
-- ✅ **Supabase Project** - Already set up with database migrations run
-- ✅ **Razorpay Account** - Test mode credentials ready
-- ✅ **Domain Names** (optional) - For custom domains - can be added later if needed
+- **GitHub Account** - Your code should be in a GitHub repository
+- **Vercel Account** - Sign up at [vercel.com](https://vercel.com) (free tier works)
+- **Render Account** - Sign up at [render.com](https://render.com) (free tier works)
+- **Supabase Project** - Already set up with database migrations run
+- **Razorpay Account** - Test mode credentials ready
+- **Domain Names** (optional) - For custom domains - can be added later if needed
 
 ---
 
@@ -56,7 +56,7 @@ This phase gets your application live on the internet with basic functionality. 
      }
    }
    ```
-   ✅ This should already be in your `package.json`.
+   This should already be in your `package.json`.
 
 #### Step 2: Create Render Web Service
 
@@ -106,7 +106,7 @@ FRONTEND_URL=https://your-frontend.vercel.app
 ```
 
 **Important Notes:**
-- ⚠️ **JWT_SECRET**: Generate a strong random secret for production:
+- **JWT_SECRET**: Generate a strong random secret for production:
   ```bash
   # On Linux/Mac
   openssl rand -base64 32
@@ -114,9 +114,9 @@ FRONTEND_URL=https://your-frontend.vercel.app
   # On Windows PowerShell
   -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 32 | % {[char]$_})
   ```
-- ⚠️ **PORT**: Render automatically sets `PORT`, but you can use `10000` as default
-- ⚠️ **RAZORPAY_WEBHOOK_SECRET**: Leave this for now, we'll configure webhooks in Phase 2
-- ⚠️ **ALLOWED_ADMIN_EMAILS**: Optional - Admin users are now managed via database. See "Setting Up Your First Admin" section below.
+- **PORT**: Render automatically sets `PORT`, but you can use `10000` as default
+- **RAZORPAY_WEBHOOK_SECRET**: Leave this for now, we'll configure webhooks in Phase 2
+- **ALLOWED_ADMIN_EMAILS**: Optional - Admin users are now managed via database. See "Setting Up Your First Admin" section below.
 
 #### Step 4: Deploy Backend
 
@@ -139,11 +139,11 @@ FRONTEND_URL=https://your-frontend.vercel.app
    ```
    Should show Swagger UI.
 
-✅ **Backend is deployed!** Save your backend URL - you'll need it for frontend configuration.
+**Backend is deployed!** Save your backend URL - you'll need it for frontend configuration.
 
 **Important**: The admin panel is part of the frontend application, so it will be deployed automatically when you deploy the frontend. No separate deployment is needed.
 
-**⚠️ Important: Run Admin Roles Migration**
+**Important: Run Admin Roles Migration**
 
 Before you can access the admin panel, you need to run the admin roles migration:
 
@@ -169,7 +169,7 @@ Before you can access the admin panel, you need to run the admin roles migration
      }
    }
    ```
-   ✅ This should already be in your `package.json`.
+   This should already be in your `package.json`.
 
 #### Step 2: Create Vercel Project
 
@@ -193,7 +193,7 @@ VITE_API_BASE_URL=https://your-backend-name.onrender.com
 
 **Important:**
 - Replace `your-backend-name.onrender.com` with your actual Render backend URL
-- ⚠️ **No trailing slash** in the URL
+- **No trailing slash** in the URL
 - For production, you can add this to **Production** environment
 
 #### Step 4: Deploy Frontend
@@ -203,7 +203,7 @@ VITE_API_BASE_URL=https://your-backend-name.onrender.com
 3. **Check deployment logs** for any errors
 4. **Note your frontend URL**: `https://your-project-name.vercel.app`
 
-**✅ Your Admin Panel is Now Live!**
+**Your Admin Panel is Now Live**
 
 The admin panel is automatically deployed as part of your frontend. Access it at:
 - **Admin Login**: `https://your-project-name.vercel.app/admin/login`
@@ -279,39 +279,39 @@ FRONTEND_URL=https://your-project-name.vercel.app,https://custom-domain.com
 
 #### Test Checklist
 
-1. **✅ Frontend loads:**
+1. **Frontend loads:**
    - Visit `https://your-project-name.vercel.app`
    - Should see your homepage
 
-2. **✅ API connection works:**
+2. **API connection works:**
    - Try to register/login
    - Check browser console for API errors
 
-3. **✅ Backend health check:**
+3. **Backend health check:**
    - Visit `https://your-backend-name.onrender.com/health`
    - Should return `{"status":"ok"}`
 
-4. **✅ Authentication flow:**
+4. **Authentication flow:**
    - Register a new user
    - Login with credentials
    - Should redirect to dashboard
 
-5. **✅ Product browsing:**
+5. **Product browsing:**
    - Browse products
    - View product details
    - Add items to cart
 
-6. **✅ Cart functionality:**
+6. **Cart functionality:**
    - Add items to cart
    - Update quantities
    - Remove items
 
-7. **✅ Admin Panel access:**
+7. **Admin Panel access:**
    - Visit `https://your-project-name.vercel.app/admin/login`
    - Login with admin credentials (email must be in `ALLOWED_ADMIN_EMAILS`)
    - Should redirect to admin dashboard
 
-⚠️ **Note**: Payment won't work yet - we'll configure that in Phase 2.
+**Important: **Note**: Payment won't work yet - we'll configure that in Phase 2.
 
 ---
 
@@ -355,9 +355,9 @@ https://jewellery-ecommerce-backend.onrender.com/api/payments/webhook
      - Replace `your-backend-name` with your actual Render service name
      - Example: `https://jewellery-ecommerce-backend.onrender.com/api/payments/webhook`
    - **Active Events**: Select these events:
-     - ✅ `payment.captured` (when payment succeeds)
-     - ✅ `payment.failed` (when payment fails)
-     - ✅ `order.paid` (optional, for additional verification)
+     - `payment.captured` (when payment succeeds)
+     - `payment.failed` (when payment fails)
+     - `order.paid` (optional, for additional verification)
    - **Secret**: Razorpay will generate a secret - **copy this!**
 
 #### Step 3: Update Backend Environment Variables
@@ -380,7 +380,7 @@ Go back to Render dashboard → Your backend service → **Environment** tab:
 2. **Check Razorpay Dashboard → Webhooks → Recent Deliveries**
 3. **Check backend logs** on Render for webhook processing
 
-✅ **Webhooks configured!**
+**Webhooks configured!**
 
 ---
 
@@ -483,19 +483,19 @@ Cloudflare provides:
 ### Backend Issues
 
 **Problem: Backend shows "Service Unavailable"**
-- ✅ Check Render logs for errors
-- ✅ Verify environment variables are set correctly
-- ✅ Check if free tier service spun down (wait 30 seconds for cold start)
+- Check Render logs for errors
+- Verify environment variables are set correctly
+- Check if free tier service spun down (wait 30 seconds for cold start)
 
 **Problem: CORS errors**
-- ✅ Verify `FRONTEND_URL` in backend environment variables matches your Vercel URL (e.g., `https://your-project-name.vercel.app`)
-- ✅ Check backend `server.js` CORS configuration
-- ✅ Make sure to include the full URL including `https://`
+- Verify `FRONTEND_URL` in backend environment variables matches your Vercel URL (e.g., `https://your-project-name.vercel.app`)
+- Check backend `server.js` CORS configuration
+- Make sure to include the full URL including `https://`
 
 **Problem: Database connection errors**
-- ✅ Verify `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are correct
-- ✅ Check Supabase project is active
-- ✅ Verify database migrations are run
+- Verify `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are correct
+- Check Supabase project is active
+- Verify database migrations are run
 
 ### Frontend Issues
 
@@ -529,42 +529,42 @@ Cloudflare provides:
 
 ### Security
 
-- [ ] ✅ Change `JWT_SECRET` to a strong random value (not the development one)
-- [ ] ✅ Verify `SUPABASE_SERVICE_ROLE_KEY` is the service role key (not anon key)
-- [ ] ✅ Ensure `.env` files are in `.gitignore` (never commit secrets)
-- [ ] ✅ Enable HTTPS/SSL on all domains (Vercel and Render provide this automatically)
-- [ ] ✅ Review CORS settings (only allow your frontend domain - use your Vercel URL)
+- [ ] Change `JWT_SECRET` to a strong random value (not the development one)
+- [ ] Verify `SUPABASE_SERVICE_ROLE_KEY` is the service role key (not anon key)
+- [ ] Ensure `.env` files are in `.gitignore` (never commit secrets)
+- [ ] Enable HTTPS/SSL on all domains (Vercel and Render provide this automatically)
+- [ ] Review CORS settings (only allow your frontend domain - use your Vercel URL)
 
 ### Performance
 
-- [ ] ✅ Enable Render auto-scaling (if on paid tier)
-- [ ] ✅ Configure Vercel caching for static assets
-- [ ] ✅ Set up Cloudflare CDN (optional - only if using custom domains)
-- [ ] ✅ Monitor Render service uptime
+- [ ] Enable Render auto-scaling (if on paid tier)
+- [ ] Configure Vercel caching for static assets
+- [ ] Set up Cloudflare CDN (optional - only if using custom domains)
+- [ ] Monitor Render service uptime
 
 ### Monitoring
 
-- [ ] ✅ Set up error tracking (e.g., Sentry, LogRocket)
-- [ ] ✅ Monitor Render logs for errors
-- [ ] ✅ Set up uptime monitoring (e.g., UptimeRobot)
-- [ ] ✅ Configure email alerts for critical errors
+- [ ] Set up error tracking (e.g., Sentry, LogRocket)
+- [ ] Monitor Render logs for errors
+- [ ] Set up uptime monitoring (e.g., UptimeRobot)
+- [ ] Configure email alerts for critical errors
 
 ### Testing
 
-- [ ] ✅ Test user registration and login
-- [ ] ✅ Test product browsing and cart
-- [ ] ✅ Test checkout and payment flow
-- [ ] ✅ Test admin panel login and access
-- [ ] ✅ Test admin features (products, orders, analytics)
-- [ ] ✅ Test webhook delivery (check Razorpay dashboard)
-- [ ] ✅ Test on mobile devices
-- [ ] ✅ Test with different browsers
+- [ ] Test user registration and login
+- [ ] Test product browsing and cart
+- [ ] Test checkout and payment flow
+- [ ] Test admin panel login and access
+- [ ] Test admin features (products, orders, analytics)
+- [ ] Test webhook delivery (check Razorpay dashboard)
+- [ ] Test on mobile devices
+- [ ] Test with different browsers
 
 ### Documentation
 
-- [ ] ✅ Update README with production URLs
-- [ ] ✅ Document environment variables
-- [ ] ✅ Create runbook for common issues
+- [ ] Update README with production URLs
+- [ ] Document environment variables
+- [ ] Create runbook for common issues
 
 ---
 

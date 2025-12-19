@@ -1,6 +1,7 @@
 const supabase = require('../config/supabase');
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../middleware/auth');
+const auditService = require('../services/auditService');
 
 const login = async (req, res) => {
   try {
@@ -17,6 +18,8 @@ const login = async (req, res) => {
     });
 
     if (authError || !authData.user) {
+      // Log failed login attempt
+      await auditService.logAdminLogin(null, email, req, false);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -59,10 +62,15 @@ const login = async (req, res) => {
     }
 
     if (!isAdmin) {
+      // Log failed admin access attempt
+      await auditService.logAdminLogin(authData.user.id, email, req, false);
       return res.status(403).json({ 
         message: 'Admin access required. Contact an administrator to grant you admin privileges, or use the Supabase Dashboard to manually add your user ID to the user_roles table.' 
       });
     }
+
+    // Log successful admin login
+    await auditService.logAdminLogin(authData.user.id, email, req, true);
 
     // Generate JWT token
     const token = jwt.sign(

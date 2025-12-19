@@ -1,6 +1,6 @@
 # Project Summary - Poor Gem E-commerce Platform
 
-## ✅ What Has Been Built
+## What Has Been Built
 
 ### Frontend (React + Vite + Tailwind CSS)
 - **Complete homepage** matching luxury jewelry brand aesthetic
@@ -65,7 +65,7 @@
 - **Sample Data** included (12 products)
 - **Setup SQL** provided for easy initialization
 
-## 🎨 Design Features
+## Design Features
 
 - **Color Palette:**
   - Beige/cream backgrounds (beige-50 to beige-900)
@@ -85,7 +85,7 @@
   - Editorial-style layouts
   - Generous white space
 
-## 🔐 Security Features
+## Security Features
 
 - Frontend never directly accesses Supabase
 - All database operations through backend API
@@ -94,7 +94,7 @@
 - Environment variable configuration
 - Service role key only on backend
 
-## 📁 File Structure
+## File Structure
 
 ```
 jewellery-ecommerce/
@@ -123,7 +123,7 @@ jewellery-ecommerce/
 └── .gitignore
 ```
 
-## 🚀 Ready to Use
+## Ready to Use
 
 The project is **production-ready** in terms of:
 - ✅ Clean, scalable architecture
@@ -134,7 +134,7 @@ The project is **production-ready** in terms of:
 - ✅ Code organization
 - ✅ Documentation
 
-## 📝 Next Steps for User
+## Next Steps for User
 
 1. **Set up Supabase** (see QUICKSTART.md)
 2. **Configure environment variables**
@@ -156,7 +156,7 @@ The project is **production-ready** in terms of:
 
 All of these are designed to be easily added to the existing architecture.
 
-## 💡 Key Design Decisions
+## Key Design Decisions
 
 1. **No direct Supabase calls from frontend** - All through backend API
 2. **JWT tokens** - Stateless authentication

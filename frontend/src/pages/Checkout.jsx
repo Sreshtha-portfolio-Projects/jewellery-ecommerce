@@ -65,8 +65,10 @@ const Checkout = () => {
 
     const discount = appliedCoupon?.amount || 0;
     const afterDiscount = subtotal - discount;
-    const tax = afterDiscount * 0.18; // 18% GST
-    const shipping = 0; // Free shipping
+    // NOTE: This is a preview calculation only. Actual pricing is calculated by backend.
+    // The backend uses configurable tax_percentage from admin_settings.
+    const tax = afterDiscount * 0.18; // Preview only - actual tax from backend config
+    const shipping = 0; // Preview only - actual shipping from backend config
     const total = afterDiscount + tax + shipping;
 
     setPriceBreakdown({
@@ -99,12 +101,22 @@ const Checkout = () => {
       if (result.valid) {
         setAppliedCoupon(result.discount);
         setCouponError('');
+        showSuccess('Coupon applied successfully!');
       } else {
-        setCouponError('Invalid coupon code');
+        setCouponError('This coupon code is not valid. Please check and try again.');
         setAppliedCoupon(null);
       }
     } catch (error) {
-      setCouponError(error.response?.data?.message || 'Failed to apply coupon');
+      const errorMsg = error.response?.data?.message;
+      if (errorMsg?.includes('minimum') || errorMsg?.includes('cart value')) {
+        setCouponError('This coupon requires a higher order value. Add more items to your cart to use this coupon.');
+      } else if (errorMsg?.includes('expired')) {
+        setCouponError('This coupon has expired. Please try a different code.');
+      } else if (errorMsg?.includes('used')) {
+        setCouponError('This coupon has already been used. Please try a different code.');
+      } else {
+        setCouponError('Unable to apply this coupon. Please check the code and try again.');
+      }
       setAppliedCoupon(null);
     } finally {
       setLoading(false);
@@ -229,7 +241,7 @@ const Checkout = () => {
             }
           } catch (error) {
             console.error('Error verifying payment:', error);
-            showError('Payment verification failed. Please contact support.');
+            showError('We\'re having trouble confirming your payment. Don\'t worry - if your payment was successful, your order will be processed. Please check your orders page or contact us if you need help.');
             
             // Reset processing state before navigation to ensure UI is responsive
             setProcessing(false);
@@ -286,12 +298,14 @@ const Checkout = () => {
     return (
       <div className="min-h-screen bg-beige-50 py-12 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-600 mb-4">Your cart is empty</p>
+          <div className="text-6xl mb-4">🛒</div>
+          <h2 className="text-xl font-serif font-semibold text-gray-900 mb-2">Your cart is empty</h2>
+          <p className="text-gray-600 mb-6">Add beautiful jewellery to your cart to get started</p>
           <button
             onClick={() => navigate('/products')}
-            className="px-6 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors"
+            className="px-6 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors font-medium"
           >
-            Continue Shopping
+            Browse Collection
           </button>
         </div>
       </div>
@@ -312,12 +326,16 @@ const Checkout = () => {
               
               {addresses.length === 0 ? (
                 <div className="text-center py-6 sm:py-8">
-                  <p className="text-sm sm:text-base text-gray-600 mb-4">No addresses found</p>
+                  <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <p className="text-sm sm:text-base text-gray-600 mb-4">Add a delivery address to continue</p>
                   <button
                     onClick={() => navigate('/account/addresses')}
-                    className="px-4 py-2 text-sm sm:text-base bg-rose-600 text-white rounded hover:bg-rose-700 active:bg-rose-800 transition-colors"
+                    className="px-4 py-2 text-sm sm:text-base bg-rose-600 text-white rounded hover:bg-rose-700 active:bg-rose-800 transition-colors font-medium"
                   >
-                    Add Address
+                    Add Delivery Address
                   </button>
                 </div>
               ) : (
@@ -383,7 +401,7 @@ const Checkout = () => {
                   />
                   <div>
                     <p className="font-semibold text-sm sm:text-base text-gray-900">Online Payment</p>
-                    <p className="text-xs sm:text-sm text-gray-600">Pay securely with Razorpay (Cards, UPI, Net Banking, Wallets)</p>
+                    <p className="text-xs sm:text-sm text-gray-600">Pay securely with Razorpay • Cards, UPI, Net Banking & Wallets accepted</p>
                   </div>
                 </label>
               </div>
@@ -498,7 +516,7 @@ const Checkout = () => {
                 )}
                 
                 <div className="flex justify-between text-xs sm:text-sm text-gray-700">
-                  <span>Tax (GST 18%)</span>
+                  <span>Tax (GST)</span>
                   <span>₹{priceBreakdown.tax.toFixed(2)}</span>
                 </div>
                 
@@ -521,7 +539,7 @@ const Checkout = () => {
                 disabled={processing || !selectedAddressId}
                 className="w-full py-2.5 sm:py-3 text-sm sm:text-base bg-rose-600 text-white rounded-lg hover:bg-rose-700 active:bg-rose-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {processing ? 'Processing...' : 'Proceed to Payment'}
+                {processing ? 'Preparing your order...' : 'Proceed to Secure Payment'}
               </button>
 
               {/* Test Mode Button (Only in Development) */}
@@ -535,9 +553,14 @@ const Checkout = () => {
                 </button>
               )}
 
-              <p className="text-[10px] sm:text-xs text-gray-500 text-center mt-3 sm:mt-4">
-                By placing this order, you agree to our Terms & Conditions
-              </p>
+              <div className="mt-3 sm:mt-4 space-y-2">
+                <p className="text-[10px] sm:text-xs text-gray-500 text-center">
+                  🔒 Your payment is secured by Razorpay
+                </p>
+                <p className="text-[10px] sm:text-xs text-gray-500 text-center">
+                  By placing this order, you agree to our Terms & Conditions
+                </p>
+              </div>
             </div>
           </div>
         </div>

@@ -1,8 +1,8 @@
-# Setup Guide - Poor Gem E-commerce Platform
+# Setup Guide - Aldorado Jewells E-commerce Platform
 
-This guide will walk you through setting up the entire platform from scratch.
+This guide provides step-by-step instructions for setting up the entire platform from scratch.
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before you begin, ensure you have:
 
@@ -17,7 +17,7 @@ node --version  # Should be v18+
 npm --version
 ```
 
-## 🗄️ Step 1: Supabase Setup
+## Step 1: Supabase Setup
 
 ### 1.1 Create Supabase Project
 
@@ -60,7 +60,7 @@ This creates:
    ```
    eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
    ```
-   ⚠️ **Important**: Use the `service_role` key (not `anon` key)
+   **Important**: Use the `service_role` key (not `anon` key)
    - It's the secret key that bypasses RLS
    - Keep it secure - never commit to git!
 
@@ -71,11 +71,11 @@ This creates:
 3. Fill in:
    - **Email**: `admin@poorgem.com` (or your email)
    - **Password**: Create a strong password
-   - **Auto Confirm User**: ✅ Check this box
+   - **Auto Confirm User**: Check this box
 4. Click **"Create user"**
 5. **Save these credentials** - you'll need them to log in!
 
-## 🔧 Step 2: Backend Setup
+## Step 2: Backend Setup
 
 ### 2.1 Install Dependencies
 
@@ -151,11 +151,11 @@ Environment: development
 - Open browser: http://localhost:3000/health
 - Should see: `{"status":"ok","message":"Server is running"}`
 
-✅ Backend is working!
+Backend is working correctly.
 
 **Stop the server:** Press `Ctrl+C`
 
-## 🎨 Step 3: Frontend Setup
+## Step 3: Frontend Setup
 
 ### 3.1 Install Dependencies
 
@@ -208,11 +208,11 @@ You should see:
   ➜  Network: use --host to expose
 ```
 
-✅ Frontend is working!
+Frontend is working correctly.
 
 **Open in browser:** http://localhost:5173
 
-## 🧪 Step 4: Verify Everything Works
+## Step 4: Verify Everything Works
 
 ### 4.1 Test Homepage
 
@@ -241,11 +241,11 @@ You should see:
 ### 4.4 Verify Admin Dashboard
 
 On the dashboard, you should see:
-- ✅ **Admin Authenticated** (green checkmark)
-- ✅ **API Connection Status: ok** (green checkmark)
-- ✅ Timestamp showing last health check
+- **Admin Authenticated** status indicator
+- **API Connection Status: ok** indicator
+- Timestamp showing last health check
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Backend Issues
 
@@ -300,7 +300,7 @@ On the dashboard, you should see:
 - Backend uses service_role key, so RLS is bypassed
 - If issues persist, check RLS policies in Supabase Dashboard
 
-## 📝 Development Workflow
+## Development Workflow
 
 ### Running Both Servers
 
@@ -338,7 +338,7 @@ npm start
 # Uses node (not nodemon)
 ```
 
-## 🔒 Security Checklist
+## Security Checklist
 
 Before deploying to production:
 
@@ -351,7 +351,7 @@ Before deploying to production:
 - [ ] Use Supabase project secrets (not service role key in production if possible)
 - [ ] Enable Supabase project backups
 
-## 📚 Next Steps
+## Next Steps
 
 Once setup is complete:
 
@@ -370,7 +370,7 @@ Once setup is complete:
    - Check `PROJECT_SUMMARY.md` for what's built
    - Extend with product CRUD, orders, etc.
 
-## 🆘 Need Help?
+## Need Help?
 
 - Check `README.md` for detailed documentation
 - Review `QUICKSTART.md` for condensed setup
@@ -378,16 +378,15 @@ Once setup is complete:
 - Check backend terminal for server errors
 - Review Supabase logs in Dashboard
 
-## ✅ Setup Complete!
+## Setup Complete
 
 If you've reached here and everything works:
-- ✅ Homepage loads with products
-- ✅ Admin login works
-- ✅ Dashboard shows API connection
-- ✅ No console errors
+- Homepage loads with products
+- Admin login works
+- Dashboard shows API connection
+- No console errors
 
-**Congratulations!** Your luxury jewelry e-commerce platform is ready! 🎉
+Your luxury jewelry e-commerce platform is ready for development.
 
 
 
-2KquJzaVkEFNMvGAQ6hZbYj34wefgUnH

@@ -82,7 +82,7 @@ The order intent system (already implemented) provides a critical foundation:
 - Real payment methods only
 - Switch: Dashboard → Settings → API Keys → Toggle "Live Mode"
 
-**⚠️ Important**: Always develop and test in Test Mode first. Only switch to Live Mode after thorough testing and deployment.
+**Important**: Always develop and test in Test Mode first. Only switch to Live Mode after thorough testing and deployment.
 
 ### Step 4: Finding Your API Keys
 

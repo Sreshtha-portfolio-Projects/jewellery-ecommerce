@@ -2,7 +2,7 @@
 
 This guide helps you test the complete checkout and order confirmation flow locally without deploying to production or using real Razorpay payments.
 
-## 🎯 Quick Setup for Local Testing
+## Quick Setup for Local Testing
 
 ### Step 1: Enable Test Mode
 
@@ -14,7 +14,7 @@ ENABLE_TEST_MODE=true
 NODE_ENV=development
 ```
 
-**⚠️ IMPORTANT**: Never set `ENABLE_TEST_MODE=true` in production!
+**IMPORTANT**: Never set `ENABLE_TEST_MODE=true` in production!
 
 ### Step 2: Update Checkout.jsx for Test Mode
 
@@ -28,7 +28,7 @@ The frontend will automatically detect if test mode is available and show a "Tes
 
 Add a test mode toggle in your checkout page (only visible in development).
 
-## 🧪 Testing Methods
+## Testing Methods
 
 ### Method 1: Using Test Payment Endpoint (Recommended)
 
@@ -165,7 +165,7 @@ const handleTestPayment = async () => {
    Headers: Authorization: Bearer YOUR_JWT_TOKEN
    ```
 
-## 📋 Complete Test Flow (STR - System Test Requirements)
+## Complete Test Flow (STR - System Test Requirements)
 
 ### Test Scenario 1: Happy Path - Complete Checkout Flow
 
@@ -443,7 +443,7 @@ const handleTestPayment = async () => {
      - All quantities are correct
      - All prices are correct
 
-## 🔍 Verification Checklist
+## Verification Checklist
 
 After completing all test scenarios, verify:
 
@@ -521,7 +521,7 @@ After completing all test scenarios, verify:
 3. Check backend logs for errors
 4. Verify variant data was saved during order creation
 
-## 📝 Notes
+## Notes
 
 - Test mode is **ONLY** for local development
 - Never enable test mode in production
@@ -529,7 +529,7 @@ After completing all test scenarios, verify:
 - Always test with real Razorpay in staging before production
 - Keep test orders separate from production data
 
-## 🚀 Next Steps After Local Testing
+## Next Steps After Local Testing
 
 Once local testing is complete:
 
