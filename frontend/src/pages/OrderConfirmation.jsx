@@ -52,7 +52,7 @@ const OrderConfirmation = () => {
         }, 5000); // Poll every 5 seconds
       } else {
         // Max polling attempts reached or order not found
-        setError('Order confirmation is taking longer than expected. Please check your orders page.');
+        setError('Your order is being processed. This may take a few moments. Please check your orders page in a minute.');
         setLoading(false);
         setConfirming(false);
       }
@@ -132,8 +132,8 @@ const OrderConfirmation = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-2xl font-serif font-bold text-gray-900 mb-2">Unable to Load Order</h2>
-          <p className="text-gray-600 mb-6">{error || 'Order not found'}</p>
+            <h2 className="text-2xl font-serif font-bold text-gray-900 mb-2">Processing Your Order</h2>
+            <p className="text-gray-600 mb-6">{error || 'Your order is being confirmed. Please check back in a moment.'}</p>
           <div className="space-y-3">
             <button
               onClick={() => navigate('/account/orders')}
@@ -170,8 +170,8 @@ const OrderConfirmation = () => {
           <h1 className="text-3xl font-serif font-bold text-gray-900 mb-2">
             Order Placed Successfully!
           </h1>
-          <p className="text-gray-600 mb-4">
-            Thank you for your purchase. We've received your order and will process it shortly.
+          <p className="text-gray-600 mb-4 text-lg">
+            Thank you for your purchase! We've received your order and will send you a confirmation email shortly.
           </p>
           
           <div className="flex items-center justify-center gap-4 mb-6">
@@ -369,7 +369,7 @@ const OrderConfirmation = () => {
                 </svg>
               </div>
               <h3 className="font-semibold text-gray-900 mb-1">Secure Payment</h3>
-              <p className="text-sm text-gray-600">Your payment has been processed securely</p>
+              <p className="text-sm text-gray-600">Your payment has been processed securely through Razorpay</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -378,7 +378,7 @@ const OrderConfirmation = () => {
                 </svg>
               </div>
               <h3 className="font-semibold text-gray-900 mb-1">Easy Returns</h3>
-              <p className="text-sm text-gray-600">Hassle-free returns available</p>
+              <p className="text-sm text-gray-600">7-day return policy with full refund guarantee</p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-3">

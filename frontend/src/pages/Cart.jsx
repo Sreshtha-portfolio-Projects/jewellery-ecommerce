@@ -24,8 +24,12 @@ const Cart = () => {
       await updateQuantity(cartItemId, newQuantity);
     } catch (error) {
       console.error('Error updating quantity:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to update quantity';
-      showError(errorMessage);
+      const errorMessage = error.response?.data?.message || error.message;
+      if (errorMessage?.includes('stock') || errorMessage?.includes('inventory')) {
+        showError('Sorry, we don\'t have enough of this item in stock. Please reduce the quantity.');
+      } else {
+        showError('Unable to update quantity. Please try again.');
+      }
     } finally {
       setUpdating({ ...updating, [cartItemId]: false });
     }
@@ -38,8 +42,7 @@ const Cart = () => {
       showSuccess('Item removed from cart');
     } catch (error) {
       console.error('Error removing item:', error);
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to remove item';
-      showError(errorMessage);
+      showError('Unable to remove item. Please try again.');
     } finally {
       setUpdating({ ...updating, [cartItemId]: false });
     }
@@ -117,7 +120,7 @@ const Cart = () => {
                             {product.name}
                           </h3>
                         </Link>
-                        <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">${price.toFixed(2)}</p>
+                        <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">₹{price.toFixed(2)}</p>
 
                         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                           <div className="flex items-center border border-gray-300 rounded">
@@ -148,7 +151,7 @@ const Cart = () => {
                             </button>
                             <div className="text-right sm:hidden">
                               <p className="text-base sm:text-lg font-semibold text-gray-900">
-                                ${itemTotal.toFixed(2)}
+                                ₹{itemTotal.toFixed(2)}
                               </p>
                             </div>
                           </div>
@@ -157,7 +160,7 @@ const Cart = () => {
 
                       <div className="hidden sm:block text-right">
                         <p className="text-base sm:text-lg font-semibold text-gray-900">
-                          ${itemTotal.toFixed(2)}
+                          ₹{itemTotal.toFixed(2)}
                         </p>
                       </div>
                     </div>
@@ -174,16 +177,16 @@ const Cart = () => {
                 <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                   <div className="flex justify-between text-sm sm:text-base text-gray-700">
                     <span>Subtotal</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>₹{total.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm sm:text-base text-gray-700">
                     <span>Shipping</span>
-                    <span className="text-green-600">Free</span>
+                    <span className="text-green-600 font-medium">Free</span>
                   </div>
                   <div className="border-t border-gray-200 pt-3 sm:pt-4">
                     <div className="flex justify-between text-base sm:text-lg font-semibold text-gray-900">
                       <span>Total</span>
-                      <span>${total.toFixed(2)}</span>
+                      <span>₹{total.toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

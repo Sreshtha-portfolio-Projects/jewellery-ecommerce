@@ -42,7 +42,7 @@ const OrderDetail = () => {
       setError(null);
     } catch (err) {
       console.error('Error fetching order detail:', err);
-      setError(err.response?.data?.message || 'Failed to load order details');
+      setError('Unable to load order details. Please try again or contact support if the problem persists.');
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,12 @@ const OrderDetail = () => {
       showSuccess('Return request submitted successfully');
     } catch (err) {
       console.error('Error creating return request:', err);
-      showError(err.response?.data?.message || 'Failed to submit return request');
+      const errorMsg = err.response?.data?.message;
+      if (errorMsg?.includes('window') || errorMsg?.includes('days')) {
+        showError('The return window for this order has expired. Please contact support for assistance.');
+      } else {
+        showError('Unable to submit return request. Please try again or contact support.');
+      }
     } finally {
       setSubmittingReturn(false);
     }
@@ -167,7 +172,7 @@ const OrderDetail = () => {
               </svg>
             </div>
             <h2 className="text-2xl font-serif font-bold text-gray-900 mb-2">Unable to Load Order</h2>
-            <p className="text-gray-600 mb-6">{error || 'Order not found'}</p>
+            <p className="text-gray-600 mb-6">{error || 'We couldn\'t find this order. It may still be processing.'}</p>
             <div className="space-y-3">
               <button
                 onClick={() => navigate('/account/orders')}
@@ -232,6 +237,7 @@ const OrderDetail = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               Need help with this order?
+              <span className="text-xs text-gray-500 ml-2">We're here to help</span>
             </button>
           </div>
         </div>
@@ -337,11 +343,11 @@ const OrderDetail = () => {
                 </div>
                 {shipping.status && shipping.status !== 'NOT_SHIPPED' && (
                   <p className="text-sm text-gray-600 mt-2">
-                    {shipping.status === 'PROCESSING' && 'Your jewellery is being carefully prepared and quality-checked.'}
-                    {shipping.status === 'SHIPPED' && 'Your jewellery has been shipped and is on its way.'}
+                    {shipping.status === 'PROCESSING' && 'Your jewellery is being carefully prepared and quality-checked by our craftsmen.'}
+                    {shipping.status === 'SHIPPED' && 'Your jewellery has been shipped and is on its way to you.'}
                     {shipping.status === 'IN_TRANSIT' && 'Your jewellery is in transit and will reach you soon.'}
-                    {shipping.status === 'OUT_FOR_DELIVERY' && 'Your jewellery is out for delivery and will arrive today.'}
-                    {shipping.status === 'DELIVERED' && 'Your jewellery has been delivered successfully.'}
+                    {shipping.status === 'OUT_FOR_DELIVERY' && 'Great news! Your jewellery is out for delivery and should arrive today.'}
+                    {shipping.status === 'DELIVERED' && 'Your jewellery has been delivered successfully. We hope you love it!'}
                   </p>
                 )}
               </div>
@@ -433,8 +439,8 @@ const OrderDetail = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                     </svg>
                   </div>
-                  <p className="text-gray-600 font-medium">Your order is being prepared for shipment</p>
-                  <p className="text-sm text-gray-500 mt-2">We'll update you once your order is shipped</p>
+                  <p className="text-gray-600 font-medium">Your order is being carefully prepared</p>
+                  <p className="text-sm text-gray-500 mt-2">We'll send you an update as soon as your order ships</p>
                 </div>
               )}
             </div>
@@ -626,9 +632,11 @@ const OrderDetail = () => {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
               >
                 <option value="">Select a reason</option>
-                <option value="Size issue">Size issue</option>
-                <option value="Damaged item">Damaged item</option>
-                <option value="Not as expected">Not as expected</option>
+                <option value="Size issue">Size doesn't fit</option>
+                <option value="Damaged item">Item arrived damaged</option>
+                <option value="Not as expected">Different from what I expected</option>
+                <option value="Changed mind">Changed my mind</option>
+                <option value="Quality issue">Quality concerns</option>
               </select>
             </div>
 
@@ -641,7 +649,7 @@ const OrderDetail = () => {
                 onChange={(e) => setReturnNote(e.target.value)}
                 rows={4}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
-                placeholder="Please provide any additional details about your return request..."
+                placeholder="Tell us more about why you're returning this item (optional)..."
               />
             </div>
 
