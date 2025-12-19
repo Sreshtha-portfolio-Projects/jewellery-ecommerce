@@ -885,16 +885,7 @@ const updateOrderStatus = async (req, res) => {
       });
 
       // Log audit
-      await supabase.from('audit_logs').insert({
-        user_id: userId,
-        action: 'order_updated',
-        entity_type: 'order',
-        entity_id: id,
-        old_values: { status: order.status },
-        new_values: { status: status },
-        ip_address: req.ip,
-        user_agent: req.get('user-agent')
-      });
+      await auditService.logOrderStatusChange(id, userId, order.status, status, req, notes);
 
       res.json(updatedOrder);
     } else {

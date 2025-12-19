@@ -24,9 +24,13 @@ const checkHealth = async () => {
     const dbResponseTime = Date.now() - dbStartTime;
     
     if (error) {
+      // Don't expose detailed error messages in production
+      const errorMessage = process.env.NODE_ENV === 'production' 
+        ? 'Database connection failed' 
+        : `Database connection failed: ${error.message}`;
       checks.database = {
         status: 'error',
-        message: `Database connection failed: ${error.message}`,
+        message: errorMessage,
         responseTime: dbResponseTime
       };
     } else {
@@ -36,13 +40,17 @@ const checkHealth = async () => {
         responseTime: dbResponseTime
       };
     }
-  } catch (error) {
-    checks.database = {
-      status: 'error',
-      message: `Database check failed: ${error.message}`,
-      responseTime: null
-    };
-  }
+    } catch (error) {
+      // Don't expose detailed error messages in production
+      const errorMessage = process.env.NODE_ENV === 'production' 
+        ? 'Database check failed' 
+        : `Database check failed: ${error.message}`;
+      checks.database = {
+        status: 'error',
+        message: errorMessage,
+        responseTime: null
+      };
+    }
 
   // Check Razorpay service (if configured)
   // Note: Razorpay is optional - failure doesn't affect overall health status
@@ -69,9 +77,13 @@ const checkHealth = async () => {
       };
     } catch (error) {
       // Razorpay failure is non-critical - mark as degraded but don't fail overall
+      // Don't expose detailed error messages in production
+      const errorMessage = process.env.NODE_ENV === 'production' 
+        ? 'Razorpay service unavailable' 
+        : `Razorpay service unavailable: ${error.message}`;
       checks.razorpay = {
         status: 'degraded',
-        message: `Razorpay service unavailable: ${error.message}`,
+        message: errorMessage,
         responseTime: null
       };
     }
@@ -119,11 +131,16 @@ const getHealth = async (req, res) => {
     
     res.status(statusCode).json(health);
   } catch (error) {
-    console.error('Health check error:', error);
+    // Log error but don't expose details in production
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Health check error:', error);
+    } else {
+      console.error('Health check error: [error details hidden in production]');
+    }
     res.status(503).json({
       status: 'error',
       message: 'Health check failed',
-      error: error.message,
+      ...(process.env.NODE_ENV === 'development' && { error: error.message }),
       timestamp: new Date().toISOString()
     });
   }
@@ -213,7 +230,12 @@ const getSimpleHealth = async (req, res) => {
     });
   } catch (error) {
     // Even if health check fails, return degraded status (never crash)
-    console.error('Health check error:', error);
+    // Don't expose error details in production
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Health check error:', error);
+    } else {
+      console.error('Health check error: [error details hidden in production]');
+    }
     res.json({
       status: 'degraded',
       api: 'up',

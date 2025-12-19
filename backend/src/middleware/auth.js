@@ -1,6 +1,22 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+// Validate JWT_SECRET is set in production
+let JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('FATAL: JWT_SECRET is not set in production environment');
+    process.exit(1);
+  }
+  // Development fallback (warn but allow)
+  console.warn('WARNING: JWT_SECRET not set, using insecure default. Set JWT_SECRET in production!');
+  JWT_SECRET = 'your-secret-key-change-in-production-DEVELOPMENT-ONLY';
+} else {
+  // Validate secret strength in production
+  if (process.env.NODE_ENV === 'production' && JWT_SECRET.length < 32) {
+    console.error('FATAL: JWT_SECRET must be at least 32 characters in production');
+    process.exit(1);
+  }
+}
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -132,5 +148,5 @@ module.exports = {
   requireAdmin, 
   requireCustomer,
   rateLimit,
-  JWT_SECRET 
+  JWT_SECRET
 };
