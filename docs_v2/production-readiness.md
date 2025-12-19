@@ -255,57 +255,535 @@ Required:
 4. **Separate Environments**: Use different secrets for dev/staging/production
 5. **Service Role Key**: Never expose service role key to frontend
 
-## Backup Strategy
+## Backup & Recovery Strategy
 
-### Database Backups
+### 1️⃣ Critical Data Identification
+
+#### Database Tables (Priority Order)
+
+**Tier 1 - Business Critical (Cannot Lose)**:
+- `orders` - All customer orders with financial data
+- `order_items` - Order line items with price snapshots (immutable)
+- `payment_transactions` - Payment references and Razorpay IDs
+- `return_requests` - Return and refund records
+- `audit_logs` - Immutable audit trail (compliance requirement)
+
+**Tier 2 - Operational Critical (High Impact)**:
+- `auth.users` - User accounts and authentication data
+- `addresses` - Customer shipping/billing addresses
+- `products` - Product catalog
+- `product_variants` - Variant pricing and stock levels
+- `admin_settings` - System configuration (tax, shipping, state machines)
+- `order_intents` - Pre-payment order intents
+- `inventory_locks` - Active inventory reservations
+
+**Tier 3 - Supporting Data (Can Rebuild)**:
+- `carts` - Shopping cart items (can be rebuilt)
+- `wishlists` - User wishlists
+- `discounts` - Coupon codes
+- `product_images` - Image metadata (files in storage)
+- `reviews` - Product reviews
+- `order_status_history` - Status change history
+- `shipping_status_history` - Shipping status history
+- `return_request_history` - Return status history
+
+#### File Storage (Supabase Storage)
+
+**Critical Buckets**:
+- `invoices` - PDF invoices (one per paid order)
+- `product-images` - Product and variant images
+
+**Storage Structure**:
+```
+invoices/
+  └── {order_id}/
+      └── INV-{order_number}.pdf
+
+product-images/
+  └── {product_id}/
+      └── {timestamp}-{random}.{ext}
+```
+
+### 2️⃣ Database Backup Plan
 
 #### Supabase Automatic Backups
 
-Supabase provides:
-- **Daily Backups**: Automatic daily backups
-- **Point-in-Time Recovery**: Restore to any point in time
-- **Backup Retention**: Configurable retention period
+**What Supabase Provides**:
+- ✅ **Daily Backups**: Automatic daily backups (included in all plans)
+- ✅ **Point-in-Time Recovery (PITR)**: Restore to any point in time (Pro plan+)
+- ✅ **Backup Retention**: 
+  - Free/Tier: 7 days retention
+  - Pro: 7 days retention
+  - Team/Enterprise: Custom retention (up to 30+ days)
+
+**How to Verify Backups**:
+1. Go to Supabase Dashboard → Project Settings → Database
+2. Check "Backups" section
+3. Verify last backup timestamp
+4. Check backup retention period
+
+**Backup Location**: Managed by Supabase (encrypted, geo-redundant)
 
 #### Manual Backup Strategy
 
-For additional safety:
+**When to Use Manual Backups**:
+- Before major migrations
+- Before bulk data changes
+- Weekly/monthly archival
+- Before system updates
 
-1. **Regular Exports**: Export critical data regularly
-2. **Migration Files**: Keep all migration files in version control
-3. **Data Exports**: Export product catalog, settings periodically
+**Manual Export Process**:
 
-### Backup Checklist
+**Option 1: Supabase Dashboard Export** (Recommended for small datasets):
+1. Go to Supabase Dashboard → Table Editor
+2. Select table → Click "..." → "Export as CSV"
+3. Save CSV file locally
+4. Repeat for all critical tables
 
-- [ ] Verify Supabase backups are enabled
-- [ ] Test backup restoration process
-- [ ] Document restoration procedures
-- [ ] Set up backup monitoring alerts
-- [ ] Regular backup verification
+**Option 2: SQL Export via Supabase SQL Editor**:
+```sql
+-- Export orders (last 30 days)
+COPY (
+  SELECT * FROM orders 
+  WHERE created_at >= NOW() - INTERVAL '30 days'
+) TO STDOUT WITH CSV HEADER;
 
-### Data Recovery Procedures
+-- Export all critical tables
+COPY (SELECT * FROM orders) TO STDOUT WITH CSV HEADER;
+COPY (SELECT * FROM order_items) TO STDOUT WITH CSV HEADER;
+COPY (SELECT * FROM payment_transactions) TO STDOUT WITH CSV HEADER;
+COPY (SELECT * FROM return_requests) TO STDOUT WITH CSV HEADER;
+COPY (SELECT * FROM audit_logs) TO STDOUT WITH CSV HEADER;
+```
 
-#### Full Database Recovery
+**Option 3: pg_dump (Full Database)**:
+```bash
+# Using Supabase connection string
+pg_dump "postgresql://postgres:[PASSWORD]@[HOST]:5432/postgres" \
+  --format=custom \
+  --file=aldorado_backup_$(date +%Y%m%d).dump
 
-1. Access Supabase dashboard
-2. Navigate to Database → Backups
-3. Select backup point
-4. Restore database
-5. Verify data integrity
+# Restore
+pg_restore -d "postgresql://..." aldorado_backup_20250119.dump
+```
 
-#### Partial Data Recovery
+**Backup Frequency Recommendations**:
+- **Daily**: Automatic (Supabase handles this)
+- **Weekly**: Manual export of critical tables (orders, payments)
+- **Monthly**: Full database export for archival
+- **Before Major Changes**: Always backup before migrations/bulk updates
 
-1. Identify affected tables
-2. Export data from backup
-3. Import data to production
-4. Verify data consistency
+**Backup Storage**:
+- Store manual backups in secure cloud storage (encrypted)
+- Keep at least 3 months of weekly backups
+- Keep at least 1 year of monthly backups
+- Never store backups in same location as production
 
-### Disaster Recovery Plan
+### 3️⃣ File & Asset Safety
 
-1. **Identify Critical Data**: Orders, customers, products, settings
-2. **Backup Frequency**: Daily for critical data
-3. **Recovery Time Objective (RTO)**: Target recovery time
-4. **Recovery Point Objective (RPO)**: Acceptable data loss window
-5. **Testing**: Regular disaster recovery drills
+#### Invoice PDFs
+
+**Storage Location**: Supabase Storage bucket `invoices`
+
+**Structure**: `invoices/{order_id}/INV-{order_number}.pdf`
+
+**Backup Strategy**:
+- ✅ **Automatic**: Supabase Storage is automatically backed up
+- ✅ **Manual**: Download invoices periodically for archival
+- ✅ **Verification**: Check invoice URLs are accessible
+
+**Recovery Process**:
+1. Invoices are regenerated on-demand if missing
+2. Invoice service checks `order.invoice_url` before generating
+3. If URL exists, returns existing invoice
+4. If missing, regenerates from order data
+
+**Verification Query**:
+```sql
+-- Check orders with missing invoices
+SELECT id, order_number, payment_status, invoice_url
+FROM orders
+WHERE payment_status = 'paid' 
+  AND (invoice_url IS NULL OR invoice_url = '');
+```
+
+#### Product Images
+
+**Storage Location**: Supabase Storage bucket `product-images`
+
+**Structure**: `product-images/{product_id}/{timestamp}-{random}.{ext}`
+
+**Backup Strategy**:
+- ✅ **Automatic**: Supabase Storage is automatically backed up
+- ✅ **Manual**: Export image URLs and metadata
+- ✅ **Verification**: Check for orphaned images (no product reference)
+
+**Orphaned File Detection**:
+```sql
+-- Find product_images without corresponding products
+SELECT pi.id, pi.product_id, pi.image_url
+FROM product_images pi
+LEFT JOIN products p ON pi.product_id = p.id
+WHERE p.id IS NULL;
+
+-- Find images in storage without database records
+-- (Requires listing storage bucket and comparing)
+```
+
+**Recovery Process**:
+1. Images are referenced in `product_images` table
+2. If image missing from storage, admin can re-upload
+3. Image URLs are stored in database (can rebuild from URLs if needed)
+
+### 4️⃣ Recovery Playbook
+
+#### Scenario 1: Database Corruption or Data Loss
+
+**Symptoms**:
+- Database queries fail
+- Data appears missing
+- Application errors
+
+**Recovery Steps**:
+
+1. **Assess Damage**:
+   ```sql
+   -- Check critical tables
+   SELECT COUNT(*) FROM orders;
+   SELECT COUNT(*) FROM order_items;
+   SELECT COUNT(*) FROM payment_transactions;
+   SELECT COUNT(*) FROM audit_logs;
+   ```
+
+2. **Stop Application** (if possible):
+   - Pause backend deployment (Render/Vercel)
+   - Prevent new orders/payments
+
+3. **Restore from Supabase Backup**:
+   - Go to Supabase Dashboard → Database → Backups
+   - Select backup point (before corruption)
+   - Click "Restore" (creates new database)
+   - Update connection string if needed
+
+4. **Verify Data Integrity**:
+   ```sql
+   -- Verify critical data exists
+   SELECT COUNT(*) FROM orders WHERE created_at >= '2025-01-01';
+   SELECT COUNT(*) FROM payment_transactions;
+   ```
+
+5. **Resume Application**:
+   - Update environment variables if database changed
+   - Restart backend
+   - Test critical flows (login, order view)
+
+**Time Estimate**: 15-30 minutes
+
+#### Scenario 2: Backend Redeployment (Data Intact)
+
+**Symptoms**:
+- Backend not responding
+- Need to redeploy code
+
+**Recovery Steps**:
+
+1. **Verify Database is Healthy**:
+   ```sql
+   SELECT COUNT(*) FROM orders;
+   -- Should return count, not error
+   ```
+
+2. **Check Environment Variables**:
+   - Verify all env vars are set in deployment platform
+   - Check `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+   - Check `JWT_SECRET`, `RAZORPAY_*` keys
+
+3. **Redeploy Backend**:
+   - Push code to repository
+   - Trigger deployment (Render auto-deploys on push)
+   - Or manually redeploy from dashboard
+
+4. **Verify Health**:
+   ```bash
+   curl https://your-backend.herokuapp.com/api/health
+   # Should return: {"status":"ok","api":"up","database":"up",...}
+   ```
+
+5. **Test Critical Endpoints**:
+   - `GET /api/health` - Health check
+   - `GET /api/products` - Product listing
+   - `POST /api/auth/login` - Authentication
+
+**Time Estimate**: 5-10 minutes
+
+#### Scenario 3: Frontend Redeployment (Data Intact)
+
+**Symptoms**:
+- Frontend not loading
+- Need to redeploy frontend
+
+**Recovery Steps**:
+
+1. **Verify Backend is Healthy**:
+   ```bash
+   curl https://your-backend.herokuapp.com/api/health
+   ```
+
+2. **Check Environment Variables**:
+   - Verify `VITE_API_BASE_URL` is set correctly
+   - Should point to backend URL
+
+3. **Redeploy Frontend**:
+   - Push code to repository
+   - Vercel auto-deploys on push
+   - Or manually redeploy from Vercel dashboard
+
+4. **Verify Frontend Loads**:
+   - Open frontend URL in browser
+   - Check browser console for errors
+   - Test login flow
+
+**Time Estimate**: 3-5 minutes
+
+#### Scenario 4: Partial Data Loss (Single Table)
+
+**Symptoms**:
+- Specific table data missing
+- Other tables intact
+
+**Recovery Steps**:
+
+1. **Identify Affected Table**:
+   ```sql
+   -- Example: orders table
+   SELECT COUNT(*) FROM orders;
+   -- If count is 0 or lower than expected
+   ```
+
+2. **Export from Backup**:
+   - Use Supabase Point-in-Time Recovery
+   - Or restore from manual backup CSV
+
+3. **Restore Data**:
+   ```sql
+   -- Option 1: Import CSV via Supabase Dashboard
+   -- Table Editor → Import CSV
+   
+   -- Option 2: SQL INSERT (from backup)
+   INSERT INTO orders (id, order_number, user_id, ...)
+   SELECT id, order_number, user_id, ...
+   FROM backup_orders;
+   ```
+
+4. **Verify Relationships**:
+   ```sql
+   -- Check foreign keys are valid
+   SELECT o.id, o.user_id, u.id as user_exists
+   FROM orders o
+   LEFT JOIN auth.users u ON o.user_id = u.id
+   WHERE u.id IS NULL;
+   ```
+
+5. **Test Application**:
+   - Verify affected functionality works
+   - Check related data (e.g., order_items for orders)
+
+**Time Estimate**: 10-20 minutes (depending on data volume)
+
+#### Scenario 5: Storage Bucket Loss (Images/Invoices)
+
+**Symptoms**:
+- Images not loading
+- Invoice PDFs missing
+
+**Recovery Steps**:
+
+1. **Verify Storage Bucket**:
+   - Go to Supabase Dashboard → Storage
+   - Check if bucket exists
+   - Check file count
+
+2. **For Product Images**:
+   - Check `product_images` table for URLs
+   - If URLs exist but files missing, re-upload images
+   - Admin can bulk re-upload via admin panel
+
+3. **For Invoices**:
+   - Invoices are regenerated on-demand
+   - Check `orders.invoice_url` for existing invoices
+   - Missing invoices will be regenerated when accessed:
+     ```
+     GET /api/orders/:orderId/invoice
+     ```
+
+4. **Prevent Future Loss**:
+   - Verify Supabase Storage backups are enabled
+   - Consider periodic export of critical files
+
+**Time Estimate**: 30-60 minutes (if manual re-upload needed)
+
+#### Scenario 6: Complete System Failure
+
+**Symptoms**:
+- Database unreachable
+- Backend down
+- Frontend down
+
+**Recovery Steps**:
+
+1. **Assess Situation**:
+   - Check Supabase status page
+   - Check deployment platform status (Render/Vercel)
+   - Check DNS/domain status
+
+2. **Restore Database First**:
+   - Use Supabase backup restore
+   - Or restore from manual backup
+
+3. **Restore Backend**:
+   - Redeploy backend code
+   - Verify environment variables
+   - Test health endpoint
+
+4. **Restore Frontend**:
+   - Redeploy frontend code
+   - Verify environment variables
+   - Test frontend loads
+
+5. **Verify End-to-End**:
+   - Test login
+   - Test product listing
+   - Test order creation (test mode)
+   - Check critical data exists
+
+**Time Estimate**: 30-60 minutes
+
+### 5️⃣ Backup Verification
+
+#### Weekly Verification Checklist
+
+- [ ] Verify Supabase automatic backups are running
+- [ ] Check last backup timestamp (should be within 24 hours)
+- [ ] Test restore process (on staging/test database)
+- [ ] Verify invoice URLs are accessible
+- [ ] Check product image URLs are accessible
+- [ ] Export critical tables (orders, payments) for archival
+- [ ] Verify backup files are stored securely
+
+#### Monthly Verification Checklist
+
+- [ ] Full database export (pg_dump)
+- [ ] Verify backup file integrity
+- [ ] Test full restore process (on test database)
+- [ ] Review backup retention policy
+- [ ] Check for orphaned files in storage
+- [ ] Verify audit logs are intact
+- [ ] Document any issues or improvements
+
+### 6️⃣ Backup Storage Locations
+
+**Recommended Storage**:
+- **Primary**: Supabase automatic backups (managed)
+- **Secondary**: Manual exports in encrypted cloud storage:
+  - Google Drive (encrypted folder)
+  - AWS S3 (encrypted bucket)
+  - OneDrive (encrypted folder)
+  - Local encrypted drive (for small backups)
+
+**Backup File Naming**:
+```
+aldorado_backup_YYYYMMDD_HHMMSS.dump
+aldorado_orders_YYYYMMDD.csv
+aldorado_payments_YYYYMMDD.csv
+```
+
+### 7️⃣ Recovery Testing
+
+#### Quarterly Disaster Recovery Drill
+
+**Test Scenario**: Simulate database corruption
+
+1. **Create Test Database**:
+   - Restore from backup to test database
+   - Verify data integrity
+
+2. **Test Recovery Process**:
+   - Follow recovery playbook
+   - Time the recovery process
+   - Document any issues
+
+3. **Verify Data**:
+   - Check all critical tables
+   - Verify relationships intact
+   - Test application functionality
+
+4. **Document Results**:
+   - Recovery time
+   - Issues encountered
+   - Improvements needed
+
+**Target Recovery Time**: < 30 minutes for full database restore
+
+### 8️⃣ Backup Monitoring
+
+#### Alerts to Set Up
+
+- **Backup Failure**: Alert if Supabase backup fails
+- **Storage Quota**: Alert if storage bucket near limit
+- **Database Size**: Alert if database size growing rapidly
+- **Missing Backups**: Alert if no backup in 48 hours
+
+#### Monitoring Tools
+
+- **Supabase Dashboard**: Check backup status weekly
+- **Manual Verification**: Weekly export of critical tables
+- **Automated Scripts**: (Future) Automated backup verification
+
+### 9️⃣ No Single Point of Failure
+
+**Current Protections**:
+- ✅ **Database**: Supabase automatic backups + manual exports
+- ✅ **Storage**: Supabase Storage automatic backups
+- ✅ **Code**: Version control (Git) with deployment history
+- ✅ **Configuration**: Environment variables in deployment platform
+- ✅ **Audit Logs**: Immutable, cannot be deleted
+
+**Gaps to Address**:
+- ⚠️ **Manual Backup Automation**: Consider automated weekly exports
+- ⚠️ **Off-Site Backups**: Store backups in separate cloud provider
+- ⚠️ **Backup Testing**: Regular restore testing (quarterly)
+
+### 🔟 Quick Reference
+
+#### Backup Commands
+
+```bash
+# Export orders (last 30 days) - via Supabase SQL Editor
+COPY (
+  SELECT * FROM orders 
+  WHERE created_at >= NOW() - INTERVAL '30 days'
+) TO STDOUT WITH CSV HEADER;
+
+# Full database backup (requires pg_dump)
+pg_dump "postgresql://..." --format=custom --file=backup.dump
+```
+
+#### Recovery Contacts
+
+- **Supabase Support**: support@supabase.com
+- **Render Support**: support@render.com
+- **Vercel Support**: support@vercel.com
+
+#### Critical URLs
+
+- **Supabase Dashboard**: https://app.supabase.com
+- **Backend Health**: `https://your-backend.onrender.com/api/health`
+- **Frontend**: `https://your-frontend.vercel.app`
+
+---
+
+**Last Updated**: 2025-01-19  
+**Next Review**: Quarterly
 
 ## Monitoring & Alerts
 
