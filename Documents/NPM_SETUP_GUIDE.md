@@ -2,7 +2,7 @@
 
 This guide provides all npm commands needed to set up and run the Aldorado Jewells e-commerce platform.
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before starting, ensure you have:
 - **Node.js** (v18 or higher) - [Download](https://nodejs.org/)
@@ -17,7 +17,7 @@ npm --version   # Should show 9.x.x or higher
 
 ---
 
-## 🚀 Complete Setup Process
+## Complete Setup Process
 
 ### Step 1: Clone Repository (if not already done)
 
@@ -160,7 +160,7 @@ VITE_API_BASE_URL=http://localhost:3000
 
 ---
 
-## 🏃 Running the Application
+## Running the Application
 
 ### Development Mode
 
@@ -279,7 +279,7 @@ npm run lint
 
 ---
 
-## 🔄 Common Workflows
+## Common Workflows
 
 ### Fresh Installation (New Machine)
 
@@ -343,7 +343,7 @@ npm install <package-name>
 
 ---
 
-## 🗄️ Database Migrations
+## Database Migrations
 
 After installing dependencies, run database migrations:
 
@@ -377,7 +377,7 @@ npm install --save-dev @testing-library/react @testing-library/jest-dom vitest
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Issue: `npm install` fails
 
@@ -428,7 +428,7 @@ export PATH=~/.npm-global/bin:$PATH
 
 ---
 
-## 📊 Dependency Overview
+## Dependency Overview
 
 ### Backend Dependencies (Production)
 - **@supabase/supabase-js** - Database client
@@ -455,7 +455,7 @@ export PATH=~/.npm-global/bin:$PATH
 
 ---
 
-## ✅ Verification Checklist
+## Verification Checklist
 
 After installation, verify everything works:
 
@@ -487,7 +487,7 @@ npm run dev
 
 ---
 
-## 📝 Quick Reference
+## Quick Reference
 
 ### Most Common Commands
 
@@ -531,7 +531,7 @@ npm install
 
 ---
 
-## 🔗 Related Documentation
+## Related Documentation
 
 - [Razorpay Payment Integration Guide](./RAZORPAY_PAYMENT_INTEGRATION.md)
 - [Razorpay Testing Guide](./RAZORPAY_TESTING_GUIDE.md)
@@ -541,7 +541,7 @@ npm install
 
 ---
 
-## 💡 Tips
+## Tips
 
 1. **Always run `npm install` after pulling code** - Dependencies may have changed
 2. **Use `npm run dev` for development** - Auto-reloads on file changes
@@ -551,7 +551,7 @@ npm install
 
 ---
 
-## 🆘 Need Help?
+## Need Help?
 
 If you encounter issues:
 1. Check the error message carefully

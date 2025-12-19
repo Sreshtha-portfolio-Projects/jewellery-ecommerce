@@ -9,6 +9,7 @@
 -- Drop existing policies if any
 DROP POLICY IF EXISTS "No public access to audit logs" ON audit_logs;
 DROP POLICY IF EXISTS "Admin can view audit logs" ON audit_logs;
+DROP POLICY IF EXISTS "Backend service role only" ON audit_logs;
 
 -- Enable RLS
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;

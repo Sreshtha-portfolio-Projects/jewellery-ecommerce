@@ -95,8 +95,8 @@ You should see: `Local: http://localhost:5173`
    - You should be redirected to the dashboard
 
 3. **Check Dashboard**: http://localhost:5173/admin/dashboard
-   - Should show "Admin Authenticated" ✅
-   - Should show "API Connection Status: ok" ✅
+   - Should show "Admin Authenticated" status
+   - Should show "API Connection Status: ok" status
 
 ## Troubleshooting
 
