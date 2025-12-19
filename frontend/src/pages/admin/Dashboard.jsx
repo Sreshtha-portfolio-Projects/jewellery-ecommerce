@@ -9,6 +9,7 @@ const Dashboard = () => {
   const [kpis, setKpis] = useState(null);
   const [orders, setOrders] = useState([]);
   const [revenueByMetal, setRevenueByMetal] = useState(null);
+  const [healthStatus, setHealthStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -20,7 +21,7 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [kpisData, ordersData, revenueData] = await Promise.all([
+      const [kpisData, ordersData, revenueData, healthData] = await Promise.all([
         adminService.getDashboardKPIs().catch((error) => {
           console.error('Error fetching KPIs:', error);
           const errorMessage = error.response?.data?.message || error.message || 'Failed to load dashboard KPIs';
@@ -38,10 +39,16 @@ const Dashboard = () => {
           // Don't show error for revenue data as it's not critical
           return null;
         }),
+        adminService.getSystemHealth().catch((error) => {
+          console.error('Error fetching health status:', error);
+          // Don't show error for health check - it's informational
+          return null;
+        }),
       ]);
       setKpis(kpisData);
       setOrders(ordersData?.orders || ordersData || []);
       setRevenueByMetal(revenueData);
+      setHealthStatus(healthData);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to load dashboard data';
@@ -50,6 +57,7 @@ const Dashboard = () => {
       setKpis(null);
       setOrders([]);
       setRevenueByMetal(null);
+      setHealthStatus(null);
     } finally {
       setLoading(false);
     }
@@ -111,6 +119,11 @@ const Dashboard = () => {
       </header>
 
       <div className="p-8">
+        {/* System Health Card */}
+        <div className="mb-6">
+          <SystemHealthCard healthStatus={healthStatus} onRefresh={fetchDashboardData} />
+        </div>
+
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <KPICard
@@ -599,6 +612,102 @@ const DiscountPromotions = ({ navigate }) => {
           </span>
         </div>
       </div>
+    </div>
+  );
+};
+
+const SystemHealthCard = ({ healthStatus, onRefresh }) => {
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return 'Never';
+    try {
+      const date = new Date(timestamp);
+      return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    } catch {
+      return 'Invalid date';
+    }
+  };
+
+  const getStatusColor = (status) => {
+    if (status === 'ok' || status === 'up') return 'text-green-600 bg-green-50';
+    if (status === 'degraded' || status === 'down') return 'text-red-600 bg-red-50';
+    return 'text-yellow-600 bg-yellow-50';
+  };
+
+  const getStatusIcon = (status) => {
+    if (status === 'ok' || status === 'up') return '✅';
+    if (status === 'degraded' || status === 'down') return '❌';
+    return '⚠️';
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <span className="text-xl">💚</span>
+          </div>
+          <h2 className="font-serif text-xl font-bold text-gray-900">System Health</h2>
+        </div>
+        <button
+          onClick={onRefresh}
+          className="px-4 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium text-gray-700"
+        >
+          🔄 Refresh
+        </button>
+      </div>
+
+      {healthStatus ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Overall Status */}
+          <div className="border-2 border-gray-200 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-600">Overall Status</span>
+              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(healthStatus.status)}`}>
+                {getStatusIcon(healthStatus.status)} {healthStatus.status?.toUpperCase() || 'UNKNOWN'}
+              </span>
+            </div>
+          </div>
+
+          {/* API Status */}
+          <div className="border-2 border-gray-200 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-600">API Status</span>
+              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(healthStatus.api)}`}>
+                {getStatusIcon(healthStatus.api)} {healthStatus.api?.toUpperCase() || 'UNKNOWN'}
+              </span>
+            </div>
+          </div>
+
+          {/* Database Status */}
+          <div className="border-2 border-gray-200 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-600">Database Status</span>
+              <span className={`px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(healthStatus.database)}`}>
+                {getStatusIcon(healthStatus.database)} {healthStatus.database?.toUpperCase() || 'UNKNOWN'}
+              </span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-4 text-gray-500">
+          <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600 mb-2"></div>
+          <p className="text-sm">Checking system health...</p>
+        </div>
+      )}
+
+      {healthStatus?.timestamp && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <p className="text-xs text-gray-500 text-center">
+            Last checked: {formatTimestamp(healthStatus.timestamp)}
+          </p>
+        </div>
+      )}
     </div>
   );
 };

@@ -65,8 +65,10 @@ const Checkout = () => {
 
     const discount = appliedCoupon?.amount || 0;
     const afterDiscount = subtotal - discount;
-    const tax = afterDiscount * 0.18; // 18% GST
-    const shipping = 0; // Free shipping
+    // NOTE: This is a preview calculation only. Actual pricing is calculated by backend.
+    // The backend uses configurable tax_percentage from admin_settings.
+    const tax = afterDiscount * 0.18; // Preview only - actual tax from backend config
+    const shipping = 0; // Preview only - actual shipping from backend config
     const total = afterDiscount + tax + shipping;
 
     setPriceBreakdown({
@@ -498,7 +500,7 @@ const Checkout = () => {
                 )}
                 
                 <div className="flex justify-between text-xs sm:text-sm text-gray-700">
-                  <span>Tax (GST 18%)</span>
+                  <span>Tax (GST)</span>
                   <span>₹{priceBreakdown.tax.toFixed(2)}</span>
                 </div>
                 

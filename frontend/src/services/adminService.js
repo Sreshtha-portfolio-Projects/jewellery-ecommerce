@@ -6,6 +6,11 @@ export const adminService = {
     return response.data;
   },
 
+  getSystemHealth: async () => {
+    const response = await api.get('/health');
+    return response.data;
+  },
+
   getDashboardKPIs: async (startDate, endDate) => {
     const params = {};
     if (startDate) params.startDate = startDate;

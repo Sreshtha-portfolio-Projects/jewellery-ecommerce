@@ -1,20 +1,11 @@
 const supabase = require('../config/supabase');
 const pricingEngine = require('../services/pricingEngine');
+const configService = require('../services/configService');
+const auditService = require('../services/auditService');
 
-// Valid order state transitions
-const VALID_TRANSITIONS = {
-  CREATED: ['paid', 'cancelled', 'shipped'], // CREATED orders can be paid, cancelled, or directly shipped
-  pending: ['paid', 'cancelled'],
-  paid: ['shipped', 'cancelled'],
-  shipped: ['delivered', 'returned'],
-  delivered: ['returned'],
-  returned: [],
-  cancelled: []
-};
-
-const validateTransition = (fromStatus, toStatus) => {
-  const allowed = VALID_TRANSITIONS[fromStatus] || [];
-  return allowed.includes(toStatus);
+// Validate transition using config service (no hardcoded values)
+const validateTransition = async (fromStatus, toStatus) => {
+  return await configService.validateOrderTransition(fromStatus, toStatus);
 };
 
 const createOrder = async (req, res) => {
@@ -245,20 +236,7 @@ const createOrder = async (req, res) => {
     }
 
     // Log audit (non-blocking)
-    try {
-      await supabase.from('audit_logs').insert({
-        user_id: userId,
-        action: 'order_created',
-        entity_type: 'order',
-        entity_id: order.id,
-        new_values: { status: 'pending', payment_status: 'pending' },
-        ip_address: req.ip,
-        user_agent: req.get('user-agent')
-      });
-    } catch (auditError) {
-      console.error('Error logging audit:', auditError);
-      // Non-critical, don't fail the order
-    }
+    await auditService.logOrderCreation(order.id, userId, req);
 
     // Note: Stock deduction and payment processing will be handled when payment integration is added
     // Orders are now created as intent/enquiry/pre-order
@@ -825,7 +803,8 @@ const updateOrderStatus = async (req, res) => {
     }
 
     // Validate status transition
-    if (!validateTransition(order.status, status)) {
+    const isValidTransition = await validateTransition(order.status, status);
+    if (!isValidTransition) {
       return res.status(400).json({ 
         message: `Invalid status transition from ${order.status} to ${status}` 
       });
@@ -945,16 +924,7 @@ const updateOrderStatus = async (req, res) => {
       });
 
       // Log audit
-      await supabase.from('audit_logs').insert({
-        user_id: userId,
-        action: 'order_updated',
-        entity_type: 'order',
-        entity_id: id,
-        old_values: { status: order.status },
-        new_values: { status: status },
-        ip_address: req.ip,
-        user_agent: req.get('user-agent')
-      });
+      await auditService.logOrderStatusChange(id, userId, order.status, status, req, notes);
 
       res.json(updatedOrder);
     }
