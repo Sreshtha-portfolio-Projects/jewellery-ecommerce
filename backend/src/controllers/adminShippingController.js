@@ -209,7 +209,11 @@ const createShipment = async (req, res) => {
 
     if (updateError) {
       console.error('Error creating shipment:', updateError);
-      return res.status(500).json({ message: 'Error creating shipment' });
+      console.error('Update error details:', JSON.stringify(updateError, null, 2));
+      return res.status(500).json({ 
+        message: 'Error creating shipment',
+        error: process.env.NODE_ENV === 'development' ? updateError.message : undefined
+      });
     }
 
     // Log status change

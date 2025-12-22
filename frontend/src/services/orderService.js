@@ -25,5 +25,10 @@ export const orderService = {
     const response = await api.get(`/orders/${orderId}/invoice`);
     return response.data;
   },
+
+  cancelOrder: async (orderId, reason) => {
+    const response = await api.post(`/orders/${orderId}/cancel`, { reason });
+    return response.data;
+  },
 };
 

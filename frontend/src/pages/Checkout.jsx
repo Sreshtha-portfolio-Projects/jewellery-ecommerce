@@ -29,8 +29,10 @@ const Checkout = () => {
   });
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login');
+    // Wait for auth to finish loading before checking
+    if (isAuthenticated === false) {
+      // Store intended route before redirecting
+      navigate('/login', { state: { from: '/checkout' } });
       return;
     }
 
@@ -39,8 +41,10 @@ const Checkout = () => {
       return;
     }
 
-    fetchAddresses();
-    calculatePriceBreakdown();
+    if (isAuthenticated) {
+      fetchAddresses();
+      calculatePriceBreakdown();
+    }
   }, [isAuthenticated, cartCount, navigate, appliedCoupon]);
 
   const fetchAddresses = async () => {

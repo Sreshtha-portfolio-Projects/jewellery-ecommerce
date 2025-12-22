@@ -5,7 +5,8 @@ const pricingEngine = require('../services/pricingEngine');
 const VALID_TRANSITIONS = {
   CREATED: ['paid', 'cancelled', 'shipped'], // CREATED orders can be paid, cancelled, or directly shipped
   pending: ['paid', 'cancelled'],
-  paid: ['shipped', 'cancelled'],
+  paid: ['processing', 'shipped', 'cancelled'],
+  processing: ['shipped', 'cancelled'],
   shipped: ['delivered', 'returned'],
   delivered: ['returned'],
   returned: [],
@@ -170,7 +171,9 @@ const createOrder = async (req, res) => {
       // Use fallback order number
     }
 
-    // Create order (pre-payment state: pending status, pending payment_status)
+    // NOTE: This endpoint is deprecated. Orders should be created via order intents after payment.
+    // For backward compatibility, we'll still allow it but with strict validation.
+    // Create order (pre-payment state: CREATED status, pending payment_status)
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
@@ -178,14 +181,15 @@ const createOrder = async (req, res) => {
         user_id: userId,
         shipping_address_id: shippingAddressId,
         billing_address_id: billingAddressId || shippingAddressId,
-        status: 'pending', // Valid status per database constraint
+        status: 'CREATED', // Use CREATED instead of pending for clarity
         subtotal,
         discount_amount: discountAmount,
         shipping_cost: shippingCost,
         tax_amount: taxAmount,
         total_amount: totalAmount,
         discount_code: finalDiscountCode,
-        payment_status: 'pending', // Use 'pending' instead of 'NOT_APPLICABLE'
+        payment_status: 'pending', // Will be updated to 'paid' after payment
+        shipment_status: 'NOT_SHIPPED', // Default shipping status
         is_online_order: true
       })
       .select()
@@ -826,54 +830,124 @@ const updateOrderStatus = async (req, res) => {
 
     // Validate status transition
     if (!validateTransition(order.status, status)) {
+      const allowed = VALID_TRANSITIONS[order.status] || [];
       return res.status(400).json({ 
-        message: `Invalid status transition from ${order.status} to ${status}` 
+        message: `Invalid status transition from ${order.status} to ${status}. Allowed transitions: ${allowed.join(', ') || 'none'}`,
+        currentStatus: order.status,
+        allowedTransitions: allowed
       });
     }
 
+    // Additional validation for cancellation: must not be shipped
+    if (status === 'cancelled') {
+      if (order.shipment_status && order.shipment_status !== 'NOT_SHIPPED') {
+        return res.status(400).json({ 
+          message: `Cannot cancel order. Shipping status is ${order.shipment_status}. Orders can only be cancelled if they are not yet shipped.` 
+        });
+      }
+    }
+
     // Handle stock management based on status
-    if (status === 'paid' && order.status === 'pending') {
-      // Deduct stock when order is paid
-      const { data: orderItems } = await supabase
-        .from('order_items')
-        .select('product_id, quantity')
-        .eq('order_id', id);
+    // Deduct stock when order transitions to 'paid' from any unpaid state (CREATED, pending)
+    if (status === 'paid' && (order.status === 'pending' || order.status === 'CREATED')) {
+      // Check if stock was already deducted (payment_status might already be 'paid')
+      const needsStockDeduction = order.payment_status !== 'paid';
+      
+      if (needsStockDeduction) {
+        // Deduct stock when order is paid
+        const { data: orderItems } = await supabase
+          .from('order_items')
+          .select('product_id, variant_id, quantity')
+          .eq('order_id', id);
 
-      for (const item of orderItems || []) {
-        // Get current stock
-        const { data: product } = await supabase
-          .from('products')
-          .select('stock_quantity')
-          .eq('id', item.product_id)
-          .single();
+        for (const item of orderItems || []) {
+          if (item.variant_id) {
+            // Deduct variant stock
+            await supabase.rpc('decrement_stock', {
+              item_id: item.variant_id,
+              quantity: item.quantity,
+              is_variant: true
+            }).catch(async (rpcError) => {
+              // Fallback to manual decrement if RPC doesn't exist
+              console.warn('RPC decrement_stock failed, using manual decrement:', rpcError);
+              const { data: variant } = await supabase
+                .from('product_variants')
+                .select('stock_quantity')
+                .eq('id', item.variant_id)
+                .single();
+              
+              if (variant) {
+                await supabase
+                  .from('product_variants')
+                  .update({ stock_quantity: Math.max(0, variant.stock_quantity - item.quantity) })
+                  .eq('id', item.variant_id);
+              }
+            });
+          } else {
+            // Deduct product stock
+            const { data: product } = await supabase
+              .from('products')
+              .select('stock_quantity')
+              .eq('id', item.product_id)
+              .single();
 
-        if (product) {
-          await supabase
-            .from('products')
-            .update({ stock_quantity: product.stock_quantity - item.quantity })
-            .eq('id', item.product_id);
+            if (product) {
+              await supabase
+                .from('products')
+                .update({ stock_quantity: Math.max(0, product.stock_quantity - item.quantity) })
+                .eq('id', item.product_id);
+            }
+          }
         }
       }
-    } else if (status === 'cancelled' && order.status === 'paid') {
-      // Restore stock if cancelling a paid order
-      const { data: orderItems } = await supabase
-        .from('order_items')
-        .select('product_id, quantity')
-        .eq('order_id', id);
+    } else if (status === 'cancelled' && (order.status === 'paid' || order.status === 'CREATED' || order.status === 'processing')) {
+      // Restore stock if cancelling a paid order (only if stock was deducted)
+      // For CREATED orders, stock was never deducted, so no need to restore
+      // Processing orders have stock deducted (they're after payment), so restore it
+      if (order.status === 'paid' || order.status === 'processing' || order.payment_status === 'paid') {
+        const { data: orderItems } = await supabase
+          .from('order_items')
+          .select('product_id, variant_id, quantity')
+          .eq('order_id', id);
 
-      for (const item of orderItems || []) {
-        // Get current stock
-        const { data: product } = await supabase
-          .from('products')
-          .select('stock_quantity')
-          .eq('id', item.product_id)
-          .single();
+        for (const item of orderItems || []) {
+          if (item.variant_id) {
+            // Restore variant stock
+            await supabase.rpc('increment_stock', {
+              item_id: item.variant_id,
+              quantity: item.quantity,
+              is_variant: true
+            }).catch(async (rpcError) => {
+              // Fallback to manual increment if RPC doesn't exist
+              console.warn('RPC increment_stock failed, using manual increment:', rpcError);
+              const { data: variant } = await supabase
+                .from('product_variants')
+                .select('stock_quantity')
+                .eq('id', item.variant_id)
+                .single();
+              
+              if (variant) {
+                await supabase
+                  .from('product_variants')
+                  .update({ stock_quantity: variant.stock_quantity + item.quantity })
+                  .eq('id', item.variant_id);
+              }
+            });
+          } else {
+            // Restore product stock
+            const { data: product } = await supabase
+              .from('products')
+              .select('stock_quantity')
+              .eq('id', item.product_id)
+              .single();
 
-        if (product) {
-          await supabase
-            .from('products')
-            .update({ stock_quantity: product.stock_quantity + item.quantity })
-            .eq('id', item.product_id);
+            if (product) {
+              await supabase
+                .from('products')
+                .update({ stock_quantity: product.stock_quantity + item.quantity })
+                .eq('id', item.product_id);
+            }
+          }
         }
       }
     }
@@ -893,7 +967,11 @@ const updateOrderStatus = async (req, res) => {
 
       if (updateError) {
         console.error('Error updating order:', updateError);
-        return res.status(500).json({ message: 'Error updating order' });
+        console.error('Update error details:', JSON.stringify(updateError, null, 2));
+        return res.status(500).json({ 
+          message: 'Error updating order',
+          error: process.env.NODE_ENV === 'development' ? updateError.message : undefined
+        });
       }
 
       // Log order status history with admin ID
@@ -932,7 +1010,11 @@ const updateOrderStatus = async (req, res) => {
 
       if (updateError) {
         console.error('Error updating order:', updateError);
-        return res.status(500).json({ message: 'Error updating order' });
+        console.error('Update error details:', JSON.stringify(updateError, null, 2));
+        return res.status(500).json({ 
+          message: 'Error updating order',
+          error: process.env.NODE_ENV === 'development' ? updateError.message : undefined
+        });
       }
 
       // Log order status history
@@ -965,12 +1047,147 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
+/**
+ * Cancel order (customer)
+ * POST /api/orders/:id/cancel
+ */
+const cancelOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+    const { reason } = req.body;
+
+    // Get current order
+    const { data: order, error: fetchError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Check permission - customer can only cancel their own orders
+    if (order.user_id !== userId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Validate cancellation eligibility
+    // Can cancel if: (status = CREATED, PAID, or PROCESSING) AND (shipping_status = NOT_SHIPPED or null)
+    const canCancel = (
+      (order.status === 'CREATED' || order.status === 'paid' || order.status === 'pending' || order.status === 'processing') &&
+      (!order.shipment_status || order.shipment_status === 'NOT_SHIPPED')
+    );
+
+    if (!canCancel) {
+      return res.status(400).json({ 
+        message: `Cannot cancel order. Current status: ${order.status}, Shipping status: ${order.shipment_status || 'NOT_SHIPPED'}. Orders can only be cancelled if they are CREATED/PAID/PROCESSING and not yet shipped.` 
+      });
+    }
+
+    // Update order status to cancelled
+    const { data: updatedOrder, error: updateError } = await supabase
+      .from('orders')
+      .update({
+        status: 'cancelled',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error cancelling order:', updateError);
+      return res.status(500).json({ message: 'Error cancelling order' });
+    }
+
+    // Restore stock if order was paid (includes processing status as it's after payment)
+    if (order.status === 'paid' || order.status === 'processing' || order.payment_status === 'paid') {
+      const { data: orderItems } = await supabase
+        .from('order_items')
+        .select('product_id, variant_id, quantity')
+        .eq('order_id', id);
+
+      for (const item of orderItems || []) {
+        if (item.variant_id) {
+          // Restore variant stock
+          await supabase.rpc('increment_stock', {
+            item_id: item.variant_id,
+            quantity: item.quantity,
+            is_variant: true
+          }).catch(async (rpcError) => {
+            // Fallback to manual increment if RPC doesn't exist
+            console.warn('RPC increment_stock failed, using manual increment:', rpcError);
+            const { data: variant } = await supabase
+              .from('product_variants')
+              .select('stock_quantity')
+              .eq('id', item.variant_id)
+              .single();
+            
+            if (variant) {
+              await supabase
+                .from('product_variants')
+                .update({ stock_quantity: variant.stock_quantity + item.quantity })
+                .eq('id', item.variant_id);
+            }
+          });
+        } else {
+          // Restore product stock
+          const { data: product } = await supabase
+            .from('products')
+            .select('stock_quantity')
+            .eq('id', item.product_id)
+            .single();
+
+          if (product) {
+            await supabase
+              .from('products')
+              .update({ stock_quantity: product.stock_quantity + item.quantity })
+              .eq('id', item.product_id);
+          }
+        }
+      }
+    }
+
+    // Log order status history
+    await supabase.from('order_status_history').insert({
+      order_id: id,
+      from_status: order.status,
+      to_status: 'cancelled',
+      changed_by: userId,
+      notes: reason || 'Cancelled by customer'
+    });
+
+    // Log audit
+    await supabase.from('audit_logs').insert({
+      user_id: userId,
+      action: 'order_cancelled',
+      entity_type: 'order',
+      entity_id: id,
+      old_values: { status: order.status },
+      new_values: { status: 'cancelled', reason: reason || null },
+      ip_address: req.ip,
+      user_agent: req.get('user-agent')
+    });
+
+    res.json({ 
+      message: 'Order cancelled successfully',
+      order: updatedOrder
+    });
+  } catch (error) {
+    console.error('Error in cancelOrder:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   createOrder,
   getOrders,
   getOrderById,
   getOrderConfirmation,
   getOrderInvoice,
-  updateOrderStatus
+  updateOrderStatus,
+  cancelOrder
 };
 
