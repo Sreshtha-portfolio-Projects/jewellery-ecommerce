@@ -1,15 +1,55 @@
 import { useState, useEffect } from 'react';
 import { discountService } from '../../services/discountService';
+import { showSuccess, showError } from '../../utils/toast';
 
 const Discounts = () => {
   const [discounts, setDiscounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    code: '',
+    description: '',
+    discountType: 'percentage',
+    discountValue: '',
+    minimumCartValue: '',
+    maxUses: '',
+    expiresAt: ''
+  });
 
   useEffect(() => {
     fetchDiscounts();
   }, []);
+
+  // Populate form when editing discount
+  useEffect(() => {
+    if (editingDiscount) {
+      // Format expires_at for datetime-local input (YYYY-MM-DDTHH:mm)
+      let formattedExpiresAt = '';
+      if (editingDiscount.expires_at) {
+        const date = new Date(editingDiscount.expires_at);
+        // Convert to local datetime string in format YYYY-MM-DDTHH:mm
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        formattedExpiresAt = `${year}-${month}-${day}T${hours}:${minutes}`;
+      }
+
+      setFormData({
+        code: editingDiscount.code || '',
+        description: editingDiscount.description || '',
+        discountType: editingDiscount.discount_type || 'percentage',
+        discountValue: editingDiscount.discount_value?.toString() || '',
+        minimumCartValue: editingDiscount.minimum_cart_value?.toString() || '',
+        maxUses: editingDiscount.max_uses?.toString() || '',
+        expiresAt: formattedExpiresAt
+      });
+      setShowForm(true);
+    }
+  }, [editingDiscount]);
 
   const fetchDiscounts = async () => {
     try {
@@ -51,6 +91,59 @@ const Discounts = () => {
     return { label: 'Active', color: 'bg-green-100 text-green-800' };
   };
 
+  const resetForm = () => {
+    setFormData({
+      code: '',
+      description: '',
+      discountType: 'percentage',
+      discountValue: '',
+      minimumCartValue: '',
+      maxUses: '',
+      expiresAt: ''
+    });
+    setEditingDiscount(null);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.code || !formData.discountValue) {
+      showError('Code and discount value are required');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const discountData = {
+        code: formData.code,
+        description: formData.description || null,
+        discountType: formData.discountType,
+        discountValue: parseFloat(formData.discountValue),
+        minimumCartValue: formData.minimumCartValue ? parseFloat(formData.minimumCartValue) : 0,
+        maxUses: formData.maxUses ? parseInt(formData.maxUses) : null,
+        expiresAt: formData.expiresAt || null
+      };
+
+      if (editingDiscount) {
+        await discountService.update(editingDiscount.id, discountData);
+        showSuccess('Discount updated successfully');
+      } else {
+        await discountService.create(discountData);
+        showSuccess('Discount created successfully');
+      }
+
+      setShowForm(false);
+      resetForm();
+      fetchDiscounts();
+    } catch (error) {
+      console.error('Error saving discount:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to save discount';
+      showError(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -79,7 +172,10 @@ const Discounts = () => {
             <p className="text-gray-600 mt-1">Manage discount codes and promotional offers</p>
           </div>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => {
+              resetForm();
+              setShowForm(true);
+            }}
             className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium flex items-center gap-2"
           >
             <span>+</span>
@@ -115,7 +211,10 @@ const Discounts = () => {
             <div className="col-span-full text-center py-12 bg-white rounded-lg shadow-sm">
               <p className="text-gray-600 mb-4">No discounts found</p>
               <button
-                onClick={() => setShowForm(true)}
+                onClick={() => {
+                  resetForm();
+                  setShowForm(true);
+                }}
                 className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
               >
                 Create Your First Discount
@@ -192,7 +291,10 @@ const Discounts = () => {
                   </div>
 
                   <div className="flex gap-2 pt-4 border-t border-gray-200">
-                    <button className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium">
+                    <button
+                      onClick={() => setEditingDiscount(discount)}
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium"
+                    >
                       Edit
                     </button>
                     <button className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium">
@@ -214,6 +316,157 @@ const Discounts = () => {
           )}
         </div>
       </div>
+
+      {/* Discount Form Modal */}
+      {showForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {editingDiscount ? 'Edit Discount' : 'Create Discount'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowForm(false);
+                    resetForm();
+                  }}
+                  className="text-gray-400 hover:text-gray-600 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Discount Code <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    placeholder="SAVE20"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={3}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    placeholder="Optional description for this discount"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Discount Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.discountType}
+                      onChange={(e) => setFormData({ ...formData, discountType: e.target.value })}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    >
+                      <option value="percentage">Percentage</option>
+                      <option value="flat">Flat Amount</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Discount Value <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.discountValue}
+                      onChange={(e) => setFormData({ ...formData, discountValue: e.target.value })}
+                      required
+                      min="0"
+                      max={formData.discountType === 'percentage' ? '100' : undefined}
+                      step="0.01"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      placeholder={formData.discountType === 'percentage' ? '20' : '100'}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Minimum Cart Value
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.minimumCartValue}
+                      onChange={(e) => setFormData({ ...formData, minimumCartValue: e.target.value })}
+                      min="0"
+                      step="0.01"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Max Uses
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.maxUses}
+                      onChange={(e) => setFormData({ ...formData, maxUses: e.target.value })}
+                      min="1"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      placeholder="Unlimited"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Expires At
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={formData.expiresAt}
+                    onChange={(e) => setFormData({ ...formData, expiresAt: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForm(false);
+                      resetForm();
+                    }}
+                    disabled={submitting}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium disabled:opacity-50"
+                  >
+                    {submitting ? 'Saving...' : editingDiscount ? 'Update Discount' : 'Create Discount'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

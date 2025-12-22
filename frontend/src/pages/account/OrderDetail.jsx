@@ -17,6 +17,9 @@ const OrderDetail = () => {
   const [returnReason, setReturnReason] = useState('');
   const [returnNote, setReturnNote] = useState('');
   const [submittingReturn, setSubmittingReturn] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -142,6 +145,29 @@ const OrderDetail = () => {
       showError(errorMessage);
     }
   };
+
+  const handleCancelOrder = async () => {
+    try {
+      setCancelling(true);
+      await orderService.cancelOrder(orderId, cancelReason);
+      showSuccess('Order cancelled successfully');
+      setShowCancelModal(false);
+      setCancelReason('');
+      fetchOrderDetail();
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to cancel order';
+      showError(errorMessage);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  // Check if order can be cancelled
+  const canCancelOrder = orderData && (
+    (orderData.order.status === 'CREATED' || orderData.order.status === 'paid' || orderData.order.status === 'pending' || orderData.order.status === 'processing') &&
+    (!orderData.order.shipment_status || orderData.order.shipment_status === 'NOT_SHIPPED')
+  ) && orderData.order.status !== 'cancelled';
 
   if (loading) {
     return (
@@ -609,6 +635,51 @@ const OrderDetail = () => {
           </div>
         </div>
       </div>
+
+      {/* Cancel Order Modal */}
+      {showCancelModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h2 className="text-2xl font-serif font-bold text-gray-900 mb-4">Cancel Order</h2>
+            
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-4">
+                Are you sure you want to cancel this order? This action cannot be undone.
+              </p>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Reason for Cancellation (Optional)
+              </label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={4}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                placeholder="Please provide a reason for cancellation..."
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowCancelModal(false);
+                  setCancelReason('');
+                }}
+                disabled={cancelling}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCancelOrder}
+                disabled={cancelling}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
+              >
+                {cancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Return Request Modal */}
       {showReturnModal && (

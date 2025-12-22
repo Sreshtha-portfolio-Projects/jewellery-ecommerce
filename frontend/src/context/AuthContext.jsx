@@ -19,11 +19,29 @@ export const AuthProvider = ({ children }) => {
           customerAuthService.logout();
           setUser(null);
         }
+      } else {
+        setUser(null);
       }
       setLoading(false);
     };
 
     checkAuth();
+
+    // Listen for storage events to sync auth state across tabs
+    const handleStorageChange = (e) => {
+      if (e.key === 'customerToken') {
+        if (e.newValue) {
+          // Token was added/updated in another tab, refresh user
+          checkAuth();
+        } else {
+          // Token was removed in another tab, clear user
+          setUser(null);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const login = async (email, password) => {

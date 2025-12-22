@@ -1,16 +1,18 @@
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { customerAuthService } from '../services/customerAuthService';
 
 const AuthCallback = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { updateUser } = useAuth();
 
   useEffect(() => {
     const token = searchParams.get('token');
     const error = searchParams.get('error');
+    const from = searchParams.get('from') || location.state?.from || '/account/profile';
 
     if (error) {
       navigate('/login?error=' + error);
@@ -25,7 +27,8 @@ const AuthCallback = () => {
       customerAuthService.getProfile()
         .then((profile) => {
           updateUser(profile);
-          navigate('/account/profile');
+          // Redirect to intended route or default to profile
+          navigate(from, { replace: true });
         })
         .catch((err) => {
           console.error('Failed to fetch profile:', err);
@@ -34,7 +37,7 @@ const AuthCallback = () => {
     } else {
       navigate('/login?error=missing_token');
     }
-  }, [searchParams, navigate, updateUser]);
+  }, [searchParams, navigate, updateUser, location]);
 
   return (
     <div className="min-h-screen bg-beige-50 flex items-center justify-center">

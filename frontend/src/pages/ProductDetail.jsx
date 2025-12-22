@@ -385,9 +385,6 @@ const ProductDetail = () => {
                               }`}>
                                 {isOutOfStock ? 'Out of Stock' : `${variant.stock_quantity} available`}
                               </div>
-                              {variant.sku && (
-                                <div className="text-xs text-gray-500">SKU: {variant.sku}</div>
-                              )}
                             </div>
                           </div>
                         </button>

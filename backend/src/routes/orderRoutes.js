@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createOrder, getOrders, getOrderById, getOrderConfirmation, getOrderInvoice, updateOrderStatus } = require('../controllers/orderController');
+const { createOrder, getOrders, getOrderById, getOrderConfirmation, getOrderInvoice, updateOrderStatus, cancelOrder } = require('../controllers/orderController');
 const { authenticateToken } = require('../middleware/auth');
 
 router.use(authenticateToken);
@@ -195,6 +195,41 @@ router.get('/:id/invoice', getOrderInvoice);
  *         description: Order status updated
  */
 router.put('/:id/status', updateOrderStatus);
+
+/**
+ * @swagger
+ * /api/orders/{id}/cancel:
+ *   post:
+ *     summary: Cancel order (customer)
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Order cancelled successfully
+ *       400:
+ *         description: Cannot cancel order (already shipped or invalid status)
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Order not found
+ */
+router.post('/:id/cancel', cancelOrder);
 
 module.exports = router;
 
