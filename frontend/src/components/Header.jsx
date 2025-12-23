@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import AccountDropdown from './account/AccountDropdown';
+import { saveRedirectPath } from '../utils/redirect';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -11,6 +12,16 @@ const Header = () => {
   const { isAuthenticated } = useAuth();
   const { cartCount } = useCart();
   const navigate = useNavigate();
+  const handleCartClick = (e) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      // After login, go to cart
+      saveRedirectPath('/cart');
+      navigate('/login', { state: { from: '/cart' } });
+    } else {
+      navigate('/cart');
+    }
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -61,8 +72,8 @@ const Header = () => {
                   </div>
                 )}
               </div>
-              <Link 
-                to="/cart" 
+              <button 
+                onClick={handleCartClick}
                 className="text-rose-700 hover:text-rose-900 transition-colors relative p-1 sm:p-0"
                 aria-label="Shopping cart"
               >
@@ -74,7 +85,7 @@ const Header = () => {
                     {cartCount > 9 ? '9+' : cartCount}
                   </span>
                 )}
-              </Link>
+              </button>
               {isAuthenticated ? (
                 <AccountDropdown />
               ) : (

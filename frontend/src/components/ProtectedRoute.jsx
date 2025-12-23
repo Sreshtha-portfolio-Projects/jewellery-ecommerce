@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { saveRedirectPath } from '../utils/redirect';
 
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -18,7 +19,8 @@ const ProtectedRoute = ({ children }) => {
 
   if (!isAuthenticated) {
     // Store intended route before redirecting to login
-    const intendedPath = location.pathname + location.search;
+    const intendedPath = location.pathname + location.search + location.hash;
+    saveRedirectPath(intendedPath);
     return <Navigate to="/login" state={{ from: intendedPath }} replace />;
   }
 

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { saveRedirectPath } from '../utils/redirect';
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
@@ -12,7 +13,9 @@ const ProductCard = ({ product }) => {
     e.stopPropagation();
     
     if (!isAuthenticated) {
-      navigate('/login');
+      // Redirect back to cart after login
+      saveRedirectPath('/cart');
+      navigate('/login', { state: { from: '/cart' } });
       return;
     }
 
