@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { addressService } from '../services/addressService';
@@ -7,11 +7,13 @@ import { discountService } from '../services/discountService';
 import { orderIntentService } from '../services/orderIntentService';
 import { paymentService } from '../services/paymentService';
 import { showError, showSuccess } from '../utils/toast';
+import { saveRedirectPath } from '../utils/redirect';
 
 const Checkout = () => {
   const { cartItems, cartCount, refreshCart } = useCart();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
@@ -32,7 +34,9 @@ const Checkout = () => {
     // Wait for auth to finish loading before checking
     if (isAuthenticated === false) {
       // Store intended route before redirecting
-      navigate('/login', { state: { from: '/checkout' } });
+      const intendedPath = location.pathname + location.search + location.hash;
+      saveRedirectPath(intendedPath);
+      navigate('/login', { state: { from: intendedPath } });
       return;
     }
 
@@ -45,7 +49,7 @@ const Checkout = () => {
       fetchAddresses();
       calculatePriceBreakdown();
     }
-  }, [isAuthenticated, cartCount, navigate, appliedCoupon]);
+  }, [isAuthenticated, cartCount, navigate, appliedCoupon, location]);
 
   const fetchAddresses = async () => {
     try {

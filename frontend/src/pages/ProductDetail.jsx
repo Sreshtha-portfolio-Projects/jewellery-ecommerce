@@ -6,7 +6,9 @@ import { reviewService } from '../services/reviewService';
 import { productPairingService } from '../services/productPairingService';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { saveRedirectPath } from '../utils/redirect';
 import { showSuccess, showError } from '../utils/toast';
+import { saveBuyNowIntent } from '../utils/buyNowIntent';
 import ProductCard from '../components/ProductCard';
 
 const ProductDetail = () => {
@@ -118,24 +120,41 @@ const ProductDetail = () => {
   };
 
   const handleBuyNow = async () => {
-    if (!isAuthenticated) {
-      navigate('/login');
-      return;
-    }
-
     // Check if variant is required but not selected
     if (product.variants && product.variants.length > 0 && !selectedVariant) {
       showError('Please select a variant');
       return;
     }
 
+    // Check stock
+    if (selectedVariant && selectedVariant.stock_quantity < quantity) {
+      showError('Insufficient stock');
+      return;
+    }
+
+    // Stage Buy Now intent so it survives login / refresh
+    saveBuyNowIntent({
+      productId: product.id,
+      quantity,
+      variantId: selectedVariant?.id || null,
+    });
+
+    if (!isAuthenticated) {
+      // After login, go to cart (with staged item)
+      saveRedirectPath('/cart');
+      navigate('/login', { state: { from: '/cart' } });
+      return;
+    }
+
+    // Already logged in: add to cart now, then go to cart
     try {
       setAddingToCart(true);
       await addToCart(product.id, quantity, selectedVariant?.id);
-      navigate('/checkout');
+      navigate('/cart');
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to add to cart';
       showError(errorMessage);
+    } finally {
       setAddingToCart(false);
     }
   };

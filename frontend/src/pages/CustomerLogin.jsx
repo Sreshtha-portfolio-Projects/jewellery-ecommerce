@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { customerAuthService } from '../services/customerAuthService';
+import { useCart } from '../context/CartContext';
+import { getStoredRedirectPath, clearRedirectPath, saveRedirectPath } from '../utils/redirect';
+import { consumeBuyNowIntent } from '../utils/buyNowIntent';
 
 const CustomerLogin = () => {
   const [email, setEmail] = useState('');
@@ -12,9 +15,11 @@ const CustomerLogin = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+  const { addToCart } = useCart();
 
   // Get intended route from location state, or default to home
-  const from = location.state?.from || '/';
+  const storedRedirect = getStoredRedirectPath();
+  const from = location.state?.from || storedRedirect || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,6 +28,18 @@ const CustomerLogin = () => {
 
     try {
       await login(email, password);
+
+      // If there is a pending Buy Now intent, add that item to cart first
+      const intent = consumeBuyNowIntent();
+      if (intent) {
+        try {
+          await addToCart(intent.productId, intent.quantity, intent.variantId || undefined);
+        } catch (addError) {
+          console.error('Failed to apply Buy Now intent after login:', addError);
+        }
+      }
+
+      clearRedirectPath();
       // Redirect to intended route or home
       navigate(from, { replace: true });
     } catch (err) {
@@ -36,6 +53,7 @@ const CustomerLogin = () => {
     setError('');
     setGoogleLoading(true);
     try {
+      saveRedirectPath(from);
       await customerAuthService.googleLogin();
     } catch (err) {
       setError(err.response?.data?.message || 'Google login failed. Please try again.');
