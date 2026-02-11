@@ -6,6 +6,29 @@ This document provides a complete, step-by-step guide for integrating Razorpay p
 
 ---
 
+## ⚡ Quick Setup (already have code)
+
+1. **Get keys**: Razorpay Dashboard → Settings → API Keys. Copy Key ID (`rzp_test_...`) and Key Secret (click Reveal).
+2. **Backend env (Render or local)**: Add `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`. For production add `RAZORPAY_WEBHOOK_SECRET` (from webhook step).
+3. **Webhook**: Razorpay → Settings → Webhooks → Add URL `https://your-backend.onrender.com/api/payments/webhook`. Select events: `payment.captured`, `payment.failed`. Copy Webhook Secret into backend env as `RAZORPAY_WEBHOOK_SECRET`.
+4. **Redeploy** backend if needed.
+5. **Test**: Checkout with test card `4111 1111 1111 1111`, any future expiry, any CVV. Check Webhooks → Recent Deliveries in Razorpay.
+
+**Local webhooks:** Use ngrok: `ngrok http 3000`, then set webhook URL to `https://your-ngrok-url.ngrok-free.app/api/payments/webhook`. Free ngrok URLs change on restart—update in Razorpay when needed.
+
+---
+
+## 🧪 Testing summary
+
+- **Endpoints:** `POST /api/payments/create-order`, `POST /api/payments/verify-payment`, `POST /api/payments/webhook`.
+- **Test card (success):** `4111 1111 1111 1111`. **Failure:** `4000 0000 0000 0002`. UPI: `success@razorpay` / `failure@razorpay`.
+- **Check:** Backend logs for order created, payment verified, stock deducted; DB `orders.payment_status` = `'paid'`; cart cleared.
+- **Checklist:** Env vars set, backend + frontend running, tunnel (local), webhook configured, checkout opens, payment succeeds, webhook received.
+
+Full testing steps and debugging are in the sections below.
+
+---
+
 ## SECTION 1: OVERVIEW
 
 ### Why Razorpay?

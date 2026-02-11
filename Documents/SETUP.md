@@ -2,6 +2,12 @@
 
 This guide will walk you through setting up the entire platform from scratch.
 
+## ⚡ Quick Start (condensed)
+
+If you know the drill: **Prerequisites** → Node.js 18+, Supabase account. **Step 1** → Create Supabase project, run `supabase-setup.sql`, copy Project URL + Service Role Key, create admin user. **Step 2** → `cd backend && npm install`, create `.env` (PORT, JWT_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY), `npm run dev`. **Step 3** → New terminal: `cd frontend && npm install`, create `.env` with `VITE_API_BASE_URL=http://localhost:3000`, `npm run dev`. **Step 4** → Visit http://localhost:5173, test admin login at `/admin/login`. For full details and troubleshooting, see below.
+
+---
+
 ## 📋 Prerequisites
 
 Before you begin, ensure you have:
@@ -373,7 +379,7 @@ Once setup is complete:
 ## 🆘 Need Help?
 
 - Check `README.md` for detailed documentation
-- Review `QUICKSTART.md` for condensed setup
+- Use the Quick Start section at the top of this guide for a condensed checklist
 - Check browser console (F12) for frontend errors
 - Check backend terminal for server errors
 - Review Supabase logs in Dashboard
@@ -387,7 +393,3 @@ If you've reached here and everything works:
 - ✅ No console errors
 
 **Congratulations!** Your luxury jewelry e-commerce platform is ready! 🎉
-
-
-
-2KquJzaVkEFNMvGAQ6hZbYj34wefgUnH

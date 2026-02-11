@@ -44,10 +44,10 @@ jewellery-ecommerce/
 │   └── add-razorpay-order-id-to-intents.sql
 │
 └── Documents/            # Documentation
-    ├── DEPLOYMENT_GUIDE.md          # Complete deployment guide (Vercel + Render)
-    ├── NPM_SETUP_GUIDE.md           # NPM commands and setup
-    ├── RAZORPAY_PAYMENT_INTEGRATION.md
-    ├── RAZORPAY_TESTING_GUIDE.md
+    ├── SETUP.md                     # Full setup guide (includes quick start)
+    ├── DEPLOYMENT_GUIDE.md          # Vercel + Render deployment
+    ├── NPM_SETUP_GUIDE.md           # NPM commands and reference
+    ├── RAZORPAY_PAYMENT_INTEGRATION.md  # Payment setup and testing
     └── ...
 ```
 
@@ -385,15 +385,14 @@ Use Razorpay test cards:
 - **Failure**: `4000 0000 0000 0002`
 - **Test UPI**: `success@razorpay` or `failure@razorpay`
 
-For complete testing guide, see: **[RAZORPAY_TESTING_GUIDE.md](./Documents/RAZORPAY_TESTING_GUIDE.md)**
+For setup and testing, see: **[RAZORPAY_PAYMENT_INTEGRATION.md](./Documents/RAZORPAY_PAYMENT_INTEGRATION.md)** (includes quick setup and testing sections).
 
 ## 📖 Documentation
 
-- **[NPM Setup Guide](./Documents/NPM_SETUP_GUIDE.md)** - Complete installation instructions
-- **[Razorpay Payment Integration](./Documents/RAZORPAY_PAYMENT_INTEGRATION.md)** - Payment setup guide
-- **[Razorpay Testing Guide](./Documents/RAZORPAY_TESTING_GUIDE.md)** - Payment testing instructions
+- **[NPM Setup Guide](./Documents/NPM_SETUP_GUIDE.md)** - Installation and NPM reference
+- **[Razorpay Payment Integration](./Documents/RAZORPAY_PAYMENT_INTEGRATION.md)** - Payment setup and testing
 - **[Order Intent Implementation](./Documents/ORDER_INTENT_IMPLEMENTATION.md)** - Order intent system
-- **[Product Management Guide](./Documents/ADMIN_PRODUCT_MANAGEMENT_IMPLEMENTATION.md)** - Admin product management
+- **[Admin Product Management](./Documents/IMPLEMENTATION_COMPLETE.md)** - Admin product management
 - **[Swagger Setup](./Documents/SWAGGER_SETUP.md)** - API documentation setup
 
 ## 🎨 Design Philosophy

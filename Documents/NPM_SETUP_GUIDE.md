@@ -1,109 +1,23 @@
-# NPM Setup Guide - Complete Installation Instructions
+# NPM Setup Guide - Commands & Reference
 
-This guide provides all npm commands needed to set up and run the Aldorado Jewells e-commerce platform.
+For **first-time setup** (clone, install, Supabase, environment variables), see **SETUP.md**. This guide covers NPM commands, environment variable reference, migrations order, and troubleshooting.
 
 ## 📋 Prerequisites
 
-Before starting, ensure you have:
 - **Node.js** (v18 or higher) - [Download](https://nodejs.org/)
 - **npm** (comes with Node.js) or **yarn**
-- **Git** (for cloning the repository)
-
-Verify installation:
-```bash
-node --version  # Should show v18.x.x or higher
-npm --version   # Should show 9.x.x or higher
-```
-
----
-
-## 🚀 Complete Setup Process
-
-### Step 1: Clone Repository (if not already done)
+- **Git** (for cloning)
 
 ```bash
-git clone <repository-url>
-cd jewellery-ecommerce
+node --version  # v18.x.x or higher
+npm --version   # 9.x.x or higher
 ```
 
-### Step 2: Backend Setup
+## 📦 Dependency Reference
 
-```bash
-# Navigate to backend directory
-cd backend
+**Backend:** `@supabase/supabase-js`, express, cors, jsonwebtoken, bcryptjs, dotenv, multer, razorpay, uuid, swagger-jsdoc, swagger-ui-express, csv-parse, csv-stringify; dev: nodemon.
 
-# Install all backend dependencies
-npm install
-
-# This installs:
-# - @supabase/supabase-js (database client)
-# - express (web framework)
-# - cors (CORS middleware)
-# - jsonwebtoken (JWT authentication)
-# - bcryptjs (password hashing)
-# - dotenv (environment variables)
-# - multer (file uploads)
-# - razorpay (payment gateway)
-# - uuid (unique ID generation)
-# - swagger-jsdoc & swagger-ui-express (API documentation)
-# - csv-parse & csv-stringify (CSV handling)
-# - nodemon (development server - dev dependency)
-```
-
-**Backend Dependencies Installed:**
-- `@supabase/supabase-js` - Supabase client library
-- `express` - Web framework
-- `cors` - Cross-origin resource sharing
-- `jsonwebtoken` - JWT token generation/verification
-- `bcryptjs` - Password hashing
-- `dotenv` - Environment variable management
-- `multer` - File upload handling
-- `razorpay` - Payment gateway integration
-- `uuid` - UUID generation
-- `swagger-jsdoc` - Swagger documentation generator
-- `swagger-ui-express` - Swagger UI for API docs
-- `csv-parse` - CSV parsing
-- `csv-stringify` - CSV generation
-
-**Dev Dependencies:**
-- `nodemon` - Auto-restart server on file changes
-
-### Step 3: Frontend Setup
-
-```bash
-# Navigate to frontend directory (from project root)
-cd frontend
-
-# Install all frontend dependencies
-npm install
-
-# This installs:
-# - react & react-dom (React framework)
-# - react-router-dom (routing)
-# - axios (HTTP client)
-# - react-hot-toast (toast notifications)
-# - razorpay (Razorpay SDK - for frontend)
-# - recharts (charts for admin dashboard)
-# - vite (build tool)
-# - tailwindcss (CSS framework)
-# - eslint (code linting)
-```
-
-**Frontend Dependencies Installed:**
-- `react` & `react-dom` - React framework
-- `react-router-dom` - Client-side routing
-- `axios` - HTTP client for API calls
-- `react-hot-toast` - Toast notification library
-- `razorpay` - Razorpay SDK (for payment integration)
-- `recharts` - Chart library for analytics
-
-**Dev Dependencies:**
-- `@vitejs/plugin-react` - Vite React plugin
-- `vite` - Build tool and dev server
-- `tailwindcss` - Utility-first CSS framework
-- `postcss` & `autoprefixer` - CSS processing
-- `eslint` - Code linting
-- `@types/react` & `@types/react-dom` - TypeScript types
+**Frontend:** react, react-dom, react-router-dom, axios, react-hot-toast, razorpay, recharts; dev: vite, tailwindcss, postcss, autoprefixer, eslint.
 
 ---
 
@@ -534,9 +448,9 @@ npm install
 ## 🔗 Related Documentation
 
 - [Razorpay Payment Integration Guide](./RAZORPAY_PAYMENT_INTEGRATION.md)
-- [Razorpay Testing Guide](./RAZORPAY_TESTING_GUIDE.md)
+- [Razorpay Payment Integration](./RAZORPAY_PAYMENT_INTEGRATION.md) (includes quick setup and testing)
 - [Order Intent Implementation](./ORDER_INTENT_IMPLEMENTATION.md)
-- [Product Management Guide](./ADMIN_PRODUCT_MANAGEMENT_IMPLEMENTATION.md)
+- [Admin Product Management](./IMPLEMENTATION_COMPLETE.md)
 - [Swagger API Documentation Setup](./SWAGGER_SETUP.md)
 
 ---

@@ -2,6 +2,27 @@
 
 This guide helps you test the complete checkout and order confirmation flow locally without deploying to production or using real Razorpay payments.
 
+---
+
+## ⚡ Quick Test (30 seconds)
+
+1. **Enable test mode** – Add to `backend/.env`: `ENABLE_TEST_MODE=true`, `NODE_ENV=development`
+2. **Restart backend:** `cd backend && npm start`
+3. **Start frontend:** `cd frontend && npm run dev`
+4. **Test:** Add items to cart → Checkout → Click **"🧪 Test Payment"** (yellow button) → You should be redirected to the confirmation page.
+
+**Endpoints:**  
+- `POST http://localhost:3000/api/payments/test/simulate-payment` (Body: `{ "orderIntentId": "uuid" }`, Header: `Authorization: Bearer <token>`)  
+- `GET http://localhost:3000/api/orders/{orderId}/confirmation`
+
+**Quick verification:** Redirected to `/orders/{id}/confirmation`, success message, order ID, items and price breakdown, address, timeline "Processing", estimated delivery, page refresh and direct URL work.
+
+**Troubleshooting:** Test button not showing → check Vite dev mode (`import.meta.env.DEV`), restart frontend. 403 on test endpoint → ensure `ENABLE_TEST_MODE=true` and `NODE_ENV=development`, restart backend. Order not found → check backend logs and order ID in URL.
+
+For full test scenarios and STR, see below.
+
+---
+
 ## 🎯 Quick Setup for Local Testing
 
 ### Step 1: Enable Test Mode
