@@ -27,6 +27,7 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const returnRoutes = require('./routes/returnRoutes');
 const adminReturnRoutes = require('./routes/adminReturnRoutes');
 const { cartActivityRouter, adminAbandonedCartRouter } = require('./routes/abandonedCartRoutes');
+const adminMetalRatesRoutes = require('./routes/adminMetalRatesRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -141,6 +142,7 @@ app.use('/api/admin/settings', adminSettingsRoutes);
 app.use('/api/admin/inventory', adminInventoryRoutes);
 app.use('/api/admin/users', adminUserRoutes);
 app.use('/api/admin/returns', adminReturnRoutes);
+app.use('/api/admin/metal-rates', adminMetalRatesRoutes);
 app.use('/api/admin', adminAbandonedCartRouter);
 app.use('/api/order-intents', orderIntentRoutes);
 app.use('/api/payments', paymentRoutes);

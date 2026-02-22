@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
+import { metalRatesService } from '../../services/metalRatesService';
 import { showSuccess, showError, showConfirm } from '../../utils/toast';
 
 const ITEM_TYPES = [
@@ -111,6 +112,8 @@ const ProductForm = () => {
   const [images, setImages] = useState([]);
   const [pendingImages, setPendingImages] = useState([]);
   const [errors, setErrors] = useState({});
+  // Stored metal rates fetched from backend on load — used to auto-fill rate when "Use Live Rate" is ticked
+  const liveRatesRef = useRef({ gold: null, silver: null });
 
   // ── Derived totals (mirrors backend calculatePricing exactly) ───────────
   //
@@ -169,6 +172,19 @@ const ProductForm = () => {
     setMetals((prev) => {
       const updated = [...prev];
       updated[i] = { ...updated[i], [field]: value };
+
+      // When "Use Live Rate" is turned ON, auto-fill rate from stored DB rates
+      if (field === 'use_live_rate' && value === true) {
+        const metalName = (updated[i].name || '').toLowerCase().trim();
+        const metalKey  = metalName.startsWith('gold') ? 'gold'
+                        : metalName.startsWith('silver') ? 'silver'
+                        : null;
+        const rateRow = metalKey ? liveRatesRef.current[metalKey] : null;
+        if (rateRow?.price_per_gram) {
+          updated[i].rate = parseFloat(rateRow.price_per_gram);
+        }
+      }
+
       updated[i].amount = calcMetalAmount(updated[i]);
       return updated;
     });
@@ -176,7 +192,7 @@ const ProductForm = () => {
   const addMetal = () =>
     setMetals((prev) => [
       ...prev,
-      { name: 'Gold', purity: '18K', gross_weight: '', rate: '', amount: 0, visible: true },
+      { name: 'Gold', purity: '18K', gross_weight: '', rate: '', amount: 0, visible: true, use_live_rate: false },
     ]);
   const removeMetal = (i) => setMetals((prev) => prev.filter((_, idx) => idx !== i));
 
@@ -229,9 +245,13 @@ const ProductForm = () => {
     if (errors[field]) setErrors((e) => ({ ...e, [field]: '' }));
   };
 
-  // ── Load for edit ───────────────────────────────────────────────────────
+  // ── Load for edit + fetch stored metal rates ────────────────────────────
   useEffect(() => {
     if (isEdit) fetchProduct();
+    // Load stored rates silently so we can auto-fill when "Use Live Rate" is ticked
+    metalRatesService.getCurrentRates()
+      .then((data) => { liveRatesRef.current = { gold: data.gold, silver: data.silver }; })
+      .catch(() => {}); // non-fatal
   }, [id]);
 
   const fetchProduct = async () => {
@@ -255,7 +275,7 @@ const ProductForm = () => {
         net_weight: data.net_weight || '',
         visibility: { ...DEFAULT_VISIBILITY, ...(data.visibility || {}) },
       });
-      setMetals(data.metals || []);
+      setMetals((data.metals || []).map(m => ({ ...m, use_live_rate: m.use_live_rate === true })));
       setStones(data.stones || []);
       setLabour(data.labour || []);
       setImages(data.images || []);
@@ -400,12 +420,26 @@ const ProductForm = () => {
             formData.append('display_order', i);
             formData.append('is_primary', pendingImages[i].is_primary || false);
             const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000').replace(/\/+$/, '');
-            await fetch(`${apiBaseUrl}/api/admin/products/${newProductId}/images/upload`, {
+            const resp = await fetch(`${apiBaseUrl}/api/admin/products/${newProductId}/images/upload`, {
               method: 'POST',
               headers: { Authorization: `Bearer ${localStorage.getItem('adminToken')}` },
               body: formData,
             });
-          } catch {}
+
+            if (!resp.ok) {
+              // capture and show error for failed upload
+              const errBody = await resp.json().catch(() => ({}));
+              console.warn('Image upload failed for new product:', errBody);
+              continue;
+            }
+
+            const data = await resp.json();
+            // Optionally add to local images array so UI reflects uploaded images if staying on page
+            setImages((prev) => [...prev, data.image]);
+          } catch (err) {
+            console.warn('Error uploading pending image:', err);
+            continue;
+          }
         }
         showSuccess('Product created successfully!');
         navigate(`/admin/products/${newProductId}`);
@@ -542,6 +576,7 @@ const ProductForm = () => {
                           <th className="px-3 py-2 text-right font-semibold">Gr. Wt (g)</th>
                           <th className="px-3 py-2 text-right font-semibold">Rate (₹/g)</th>
                           <th className="px-3 py-2 text-right font-semibold">Amount (₹)</th>
+                          <th className="px-3 py-2 text-center font-semibold">Use Live Rate</th>
                           <th className="px-3 py-2 text-center font-semibold">Visible</th>
                           <th className="px-2 py-2" />
                         </tr>
@@ -582,13 +617,23 @@ const ProductForm = () => {
                                 type="number"
                                 step="0.01"
                                 value={m.rate}
-                                onChange={(e) => handleMetalChange(i, 'rate', e.target.value)}
-                                placeholder="0"
-                                className={`${inputCls} text-right w-28`}
+                                onChange={(e) => !m.use_live_rate && handleMetalChange(i, 'rate', e.target.value)}
+                                readOnly={!!m.use_live_rate}
+                                placeholder={m.use_live_rate ? 'Auto' : '0'}
+                                title={m.use_live_rate ? 'Rate is auto-filled from stored live rate' : ''}
+                                className={`${inputCls} text-right w-28 ${m.use_live_rate ? 'bg-amber-50 border-amber-300 text-amber-800 cursor-not-allowed' : ''}`}
                               />
                             </td>
                             <td className="px-3 py-2 text-right font-medium text-gray-800">
                               ₹{fmt(m.amount)}
+                            </td>
+                            <td className="px-3 py-2 text-center">
+                              <input
+                                type="checkbox"
+                                checked={!!m.use_live_rate}
+                                onChange={(e) => handleMetalChange(i, 'use_live_rate', e.target.checked)}
+                                className="w-4 h-4 accent-rose-600"
+                              />
                             </td>
                             <td className="px-3 py-2 text-center">
                               <VisibilityBtn

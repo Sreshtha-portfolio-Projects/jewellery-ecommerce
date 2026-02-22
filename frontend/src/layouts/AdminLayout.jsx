@@ -13,6 +13,7 @@ const AdminLayout = () => {
     { path: '/admin/analytics', label: 'Analytics', icon: '📈' },
     { path: '/admin/discounts', label: 'Discounts', icon: '🎫' },
     { path: '/admin/pricing-rules', label: 'Pricing Rules', icon: '💰' },
+    { path: '/admin/metal-rates',   label: 'Metal Rates',   icon: '⚖️' },
     { path: '/admin/abandoned-carts', label: 'Abandoned Carts', icon: '🛒' },
     { path: '/admin/customers', label: 'Customers', icon: '👥' },
     { path: '/admin/settings', label: 'Settings', icon: '⚙️' },

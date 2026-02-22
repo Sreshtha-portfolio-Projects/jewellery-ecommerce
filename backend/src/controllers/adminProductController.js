@@ -90,8 +90,42 @@ const getAllProducts = async (req, res) => {
       })
     );
 
+    // Fetch primary images for the listed products in a single query to populate `image_url` used by the admin UI
+    const productIds = (productsWithStock || []).map(p => p.id);
+    let imagesMap = {};
+    if (productIds.length > 0) {
+      const { data: primaryImages } = await supabase
+        .from('product_images')
+        .select('product_id, image_url, is_primary')
+        .in('product_id', productIds)
+        .eq('is_primary', true);
+
+      (primaryImages || []).forEach(img => {
+        imagesMap[img.product_id] = img.image_url;
+      });
+    }
+
+    // Attach image_url to each product (fallback to first image if no primary)
+    const productsFinal = await Promise.all((productsWithStock || []).map(async (p) => {
+      if (!imagesMap[p.id]) {
+        // Try to find any image for this product
+        const { data: anyImg } = await supabase
+          .from('product_images')
+          .select('image_url')
+          .eq('product_id', p.id)
+          .order('display_order', { ascending: true })
+          .limit(1)
+          .single();
+        imagesMap[p.id] = anyImg?.image_url || null;
+      }
+      return {
+        ...p,
+        image_url: imagesMap[p.id] || null
+      };
+    }));
+
     res.json({
-      products: productsWithStock,
+      products: productsFinal,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),

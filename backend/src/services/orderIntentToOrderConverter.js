@@ -1,4 +1,5 @@
 const supabase = require('../config/supabase');
+const { getLatestRates } = require('./metalPriceService');
 
 /**
  * Convert order intent to order after payment confirmation
@@ -60,6 +61,33 @@ const convertIntentToOrder = async (orderIntentId, paymentDetails = {}) => {
     // Get cart snapshot items
     const cartItems = orderIntent.cart_snapshot?.items || [];
 
+    // Fetch current metal rates to snapshot at order creation time
+    // This freezes gold/silver prices — no recalculation ever after this point
+    let metalRateSnapshot = null;
+    try {
+      const rates = await getLatestRates();
+      if (rates.gold || rates.silver) {
+        metalRateSnapshot = {};
+        if (rates.gold) {
+          metalRateSnapshot.gold = {
+            price_per_gram: rates.gold.price_per_gram,
+            currency:       rates.gold.currency,
+            last_updated:   rates.gold.last_updated,
+          };
+        }
+        if (rates.silver) {
+          metalRateSnapshot.silver = {
+            price_per_gram: rates.silver.price_per_gram,
+            currency:       rates.silver.currency,
+            last_updated:   rates.silver.last_updated,
+          };
+        }
+      }
+    } catch (rateErr) {
+      // Non-fatal — snapshot may be null if rates table is unavailable
+      console.warn('[orderConverter] Could not snapshot metal rates:', rateErr.message);
+    }
+
     // Create order
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -117,7 +145,8 @@ const convertIntentToOrder = async (orderIntentId, paymentDetails = {}) => {
         quantity: item.quantity,
         subtotal: itemPrice * item.quantity,
         variant_id: variantId,
-        variant_snapshot: variantSnapshot
+        variant_snapshot: variantSnapshot,
+        metal_rate_snapshot: metalRateSnapshot,
       };
     });
 

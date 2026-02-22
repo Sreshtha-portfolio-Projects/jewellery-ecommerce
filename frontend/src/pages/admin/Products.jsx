@@ -131,6 +131,7 @@ const Products = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Base Price</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Selling Price</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Variants</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
@@ -169,6 +170,9 @@ const Products = () => {
                       <td className="px-6 py-4 text-sm text-gray-600">{product.category}</td>
                       <td className="px-6 py-4 text-sm font-semibold text-gray-900">
                         {formatCurrency(product.base_price || product.price)}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                        {formatCurrency(product.selling_price || product.price || product.base_price)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {product.total_stock || 0}
