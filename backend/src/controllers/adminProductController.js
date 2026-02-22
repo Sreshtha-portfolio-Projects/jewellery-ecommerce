@@ -1,6 +1,41 @@
 const supabase = require('../config/supabase');
 
 /**
+ * Pricing model:
+ *   overhead_amount       = labour_cost_internal × overhead_percent / 100
+ *   subtotal              = metal + stone + labour_cost_internal + overhead_amount
+ *   margin_amount         = subtotal × margin_percent / 100
+ *   final_total_price     = subtotal + margin_amount
+ *   labour_charge_visible = final_total_price − metal − stone
+ *
+ * Customers only ever see: metal_amount, stone_amount, labour_charge_visible, final_total_price.
+ * overhead_amount, margin_amount, labour_cost_internal are admin-only.
+ */
+function calculatePricing({ metals = [], stones = [], labour = [], overhead_percent = 0, margin_percent = 0 }) {
+  const metal_amount = metals.reduce((sum, m) => sum + (parseFloat(m.amount) || 0), 0);
+  const stone_amount = stones.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0);
+  const labour_cost_internal = labour.reduce((sum, l) => sum + (parseFloat(l.amount) || 0), 0);
+
+  const overhead_amount = labour_cost_internal * (parseFloat(overhead_percent) || 0) / 100;
+  const subtotal = metal_amount + stone_amount + labour_cost_internal + overhead_amount;
+  const margin_amount = subtotal * (parseFloat(margin_percent) || 0) / 100;
+  const final_total_price = subtotal + margin_amount;
+  const labour_charge_visible = final_total_price - metal_amount - stone_amount;
+
+  return {
+    metal_amount,
+    stone_amount,
+    labour_cost_internal,
+    overhead_amount,
+    margin_amount,
+    final_total_price,
+    labour_charge_visible,
+    cost_price: metal_amount + stone_amount + labour_cost_internal,
+    selling_price: final_total_price,
+  };
+}
+
+/**
  * Get all products (admin view with full details)
  */
 const getAllProducts = async (req, res) => {
@@ -140,12 +175,61 @@ const createProduct = async (req, res) => {
       is_active = true,
       is_bestseller = false,
       variants = [],
-      images = []
+      images = [],
+      // Jewellery costing fields
+      item_code,
+      family,
+      item_type,
+      pieces,
+      metals = [],
+      stones = [],
+      labour = [],
+      add_charge = 0,
+      cost_price = 0,
+      overhead_percent = 0,
+      overhead_amount = 0,
+      margin_percent = 0,
+      margin_amount = 0,
+      selling_price = 0,
+      gross_weight = 0,
+      net_weight,
+      visibility
     } = req.body;
 
-    if (!name || !category || !base_price) {
-      return res.status(400).json({ message: 'Name, category, and base_price are required' });
+    if (!name || !category) {
+      return res.status(400).json({ message: 'Name and category are required' });
     }
+
+    // Run authoritative pricing calculation
+    const pricing = calculatePricing({
+      metals,
+      stones,
+      labour,
+      overhead_percent,
+      margin_percent,
+    });
+
+    const effectivePrice = pricing.final_total_price > 0 ? pricing.final_total_price : (parseFloat(base_price) || 0);
+
+    // Require a non-zero effective price so products are not created with selling_price = 0
+    if (!(effectivePrice > 0)) {
+      return res.status(400).json({
+        message: 'Provide a base_price or at least one costing component (metals, stones, or labour) so selling price is greater than 0'
+      });
+    }
+
+    const defaultVisibility = {
+      metalSection: true,
+      stoneSection: true,
+      labourSection: false,
+      addCharge: false,
+      costPrice: false,
+      overhead: false,
+      margin: false,
+      priceBreakdown: false,
+      itemCode: true,
+      grossWeight: true
+    };
 
     // Create product
     const { data: product, error: productError } = await supabase
@@ -158,10 +242,29 @@ const createProduct = async (req, res) => {
         metal_type,
         purity,
         karat,
-        base_price: parseFloat(base_price),
-        price: parseFloat(base_price), // Keep price for backward compatibility
+        base_price: effectivePrice,
+        price: effectivePrice,
         is_active,
-        is_bestseller
+        is_bestseller,
+        item_code: item_code || null,
+        family: family || null,
+        item_type: item_type || null,
+        pieces: parseInt(pieces) || 1,
+        metals: metals || [],
+        stones: stones || [],
+        labour: labour || [],
+        add_charge: parseFloat(add_charge) || 0,
+        cost_price: pricing.cost_price,
+        overhead_percent: parseFloat(overhead_percent) || 0,
+        overhead_amount: pricing.overhead_amount,
+        margin_percent: parseFloat(margin_percent) || 0,
+        margin_amount: pricing.margin_amount,
+        labour_cost_internal: pricing.labour_cost_internal,
+        labour_charge_visible: pricing.labour_charge_visible,
+        selling_price: effectivePrice,
+        gross_weight: parseFloat(gross_weight) || 0,
+        net_weight: net_weight ? parseFloat(net_weight) : null,
+        visibility: { ...defaultVisibility, ...(visibility || {}) }
       })
       .select()
       .single();
@@ -257,7 +360,25 @@ const updateProduct = async (req, res) => {
       karat,
       base_price,
       is_active,
-      is_bestseller
+      is_bestseller,
+      // Jewellery costing fields
+      item_code,
+      family,
+      item_type,
+      pieces,
+      metals,
+      stones,
+      labour,
+      add_charge,
+      cost_price,
+      overhead_percent,
+      overhead_amount,
+      margin_percent,
+      margin_amount,
+      selling_price,
+      gross_weight,
+      net_weight,
+      visibility
     } = req.body;
 
     // Get old product for audit
@@ -279,12 +400,64 @@ const updateProduct = async (req, res) => {
     if (metal_type !== undefined) updateData.metal_type = metal_type;
     if (purity !== undefined) updateData.purity = purity;
     if (karat !== undefined) updateData.karat = karat;
-    if (base_price !== undefined) {
-      updateData.base_price = parseFloat(base_price);
-      updateData.price = parseFloat(base_price); // Keep price for backward compatibility
-    }
     if (is_active !== undefined) updateData.is_active = is_active;
     if (is_bestseller !== undefined) updateData.is_bestseller = is_bestseller;
+
+    // Costing fields
+    if (item_code !== undefined) updateData.item_code = item_code || null;
+    if (family !== undefined) updateData.family = family || null;
+    if (item_type !== undefined) updateData.item_type = item_type || null;
+    if (pieces !== undefined) updateData.pieces = parseInt(pieces) || 1;
+    if (add_charge !== undefined) updateData.add_charge = parseFloat(add_charge) || 0;
+    if (gross_weight !== undefined) updateData.gross_weight = parseFloat(gross_weight) || 0;
+    if (net_weight !== undefined) updateData.net_weight = net_weight ? parseFloat(net_weight) : null;
+    if (visibility !== undefined) updateData.visibility = visibility;
+
+    // Recalculate pricing whenever any cost input changes
+    const recalcNeeded =
+      metals !== undefined ||
+      stones !== undefined ||
+      labour !== undefined ||
+      overhead_percent !== undefined ||
+      margin_percent !== undefined;
+
+    if (recalcNeeded) {
+      const currentMetals  = metals  !== undefined ? metals  : (oldProduct.metals  || []);
+      const currentStones  = stones  !== undefined ? stones  : (oldProduct.stones  || []);
+      const currentLabour  = labour  !== undefined ? labour  : (oldProduct.labour  || []);
+      const currentOvPct   = overhead_percent !== undefined ? overhead_percent : (oldProduct.overhead_percent || 0);
+      const currentMgPct   = margin_percent   !== undefined ? margin_percent   : (oldProduct.margin_percent   || 0);
+
+      if (metals   !== undefined) updateData.metals  = metals;
+      if (stones   !== undefined) updateData.stones  = stones;
+      if (labour   !== undefined) updateData.labour  = labour;
+      if (overhead_percent !== undefined) updateData.overhead_percent = parseFloat(overhead_percent) || 0;
+      if (margin_percent   !== undefined) updateData.margin_percent   = parseFloat(margin_percent)   || 0;
+
+      const pricing = calculatePricing({
+        metals:           currentMetals,
+        stones:           currentStones,
+        labour:           currentLabour,
+        overhead_percent: currentOvPct,
+        margin_percent:   currentMgPct,
+      });
+
+      updateData.cost_price            = pricing.cost_price;
+      updateData.overhead_amount       = pricing.overhead_amount;
+      updateData.margin_amount         = pricing.margin_amount;
+      updateData.labour_cost_internal  = pricing.labour_cost_internal;
+      updateData.labour_charge_visible = pricing.labour_charge_visible;
+
+      // Use a safe effective price: prefer calculated final_total_price, otherwise fall back to existing product price
+      const effectivePrice = pricing.final_total_price > 0
+        ? pricing.final_total_price
+        : (oldProduct.base_price || oldProduct.price || 0);
+
+      updateData.selling_price = effectivePrice;
+      updateData.base_price    = effectivePrice;
+      updateData.price         = effectivePrice;
+    }
+
     updateData.updated_at = new Date().toISOString();
 
     const { data: product, error } = await supabase

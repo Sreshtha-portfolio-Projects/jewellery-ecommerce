@@ -351,6 +351,44 @@ const ProductDetail = () => {
                 </div>
               )}
 
+              {/* Item Code / Family */}
+              {product.visibility?.itemCode && (product.item_code || product.family || product.item_type) && (
+                <div className="mb-4 flex flex-wrap gap-2 text-xs">
+                  {product.item_code && (
+                    <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded font-mono">
+                      {product.item_code}
+                    </span>
+                  )}
+                  {product.family && (
+                    <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                      Family: {product.family}
+                    </span>
+                  )}
+                  {product.item_type && (
+                    <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                      Type: {product.item_type}
+                    </span>
+                  )}
+                  {product.pieces > 1 && (
+                    <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded">
+                      Pcs: {product.pieces}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Gross / Net Weight */}
+              {product.visibility?.grossWeight && (product.gross_weight > 0 || product.net_weight) && (
+                <div className="mb-4 flex gap-4 text-sm text-gray-600">
+                  {product.gross_weight > 0 && (
+                    <span>Gross Weight: <strong>{product.gross_weight} g</strong></span>
+                  )}
+                  {product.net_weight && (
+                    <span>Net Weight: <strong>{product.net_weight} g</strong></span>
+                  )}
+                </div>
+              )}
+
               {/* Description */}
               {product.description && (
                 <div className="mb-4 sm:mb-6">
@@ -546,6 +584,86 @@ const ProductDetail = () => {
             </div>
           </div>
         </div>
+
+        {/* Price Breakdown Section — shows only customer-safe fields */}
+        {product.visibility?.priceBreakdown && (
+          <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 md:p-8 mb-6 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Price Breakdown</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-4 py-2 text-left font-semibold text-gray-700">Component</th>
+                    <th className="px-4 py-2 text-left font-semibold text-gray-700">Details</th>
+                    <th className="px-4 py-2 text-right font-semibold text-gray-700">Amount (₹)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+
+                  {/* Metal rows — only amount shown, no internal rate */}
+                  {product.visibility?.metalSection &&
+                    product.metals?.filter((m) => m.visible !== false).map((m, i) => (
+                      <tr key={`metal-${i}`} className="hover:bg-gray-50">
+                        <td className="px-4 py-2 font-medium text-gray-800">
+                          {m.name}
+                          {m.purity && (
+                            <span className="ml-1 text-xs text-gray-400">({m.purity})</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-gray-500 text-xs">
+                          {m.gross_weight ? `${m.gross_weight} g` : '—'}
+                        </td>
+                        <td className="px-4 py-2 text-right font-medium">
+                          ₹{parseFloat(m.amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    ))}
+
+                  {/* Stone rows — only amount shown */}
+                  {product.visibility?.stoneSection &&
+                    product.stones?.filter((s) => s.visible !== false).map((s, i) => (
+                      <tr key={`stone-${i}`} className="hover:bg-gray-50">
+                        <td className="px-4 py-2 font-medium text-gray-800">
+                          {s.name || 'Stone'}
+                          {s.type && (
+                            <span className="ml-1 text-xs text-gray-400">({s.type})</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-gray-500 text-xs">
+                          {s.weight ? `${s.weight} ${s.unit || 'CTS'}` : '—'}
+                          {s.pieces > 0 && ` • ${s.pieces} pcs`}
+                        </td>
+                        <td className="px-4 py-2 text-right font-medium">
+                          ₹{parseFloat(s.amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    ))}
+
+                  {/* Labour Charge — single derived line; never reveals internal rate/overhead/margin */}
+                  {product.visibility?.labourSection &&
+                    parseFloat(product.labour_charge_visible || 0) > 0 && (
+                      <tr className="hover:bg-gray-50">
+                        <td className="px-4 py-2 font-medium text-gray-800">Labour Charge</td>
+                        <td className="px-4 py-2 text-gray-500 text-xs">Making & finishing</td>
+                        <td className="px-4 py-2 text-right font-medium">
+                          ₹{parseFloat(product.labour_charge_visible).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                        </td>
+                      </tr>
+                    )}
+
+                </tbody>
+                <tfoot>
+                  <tr className="bg-rose-50">
+                    <td className="px-4 py-3 font-bold text-rose-800 text-base" colSpan={2}>Total</td>
+                    <td className="px-4 py-3 text-right font-bold text-rose-700 text-base">
+                      ₹{parseFloat(product.selling_price || product.price || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* Reviews Section */}
         <div className="bg-white rounded-lg shadow-sm p-4 sm:p-6 md:p-8 mb-6 sm:mb-8">
