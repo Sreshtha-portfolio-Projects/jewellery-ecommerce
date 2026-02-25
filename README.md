@@ -389,11 +389,22 @@ For setup and testing, see: **[RAZORPAY_PAYMENT_INTEGRATION.md](./Documents/RAZO
 
 ## 📖 Documentation
 
+### Setup & Deployment
 - **[NPM Setup Guide](./Documents/NPM_SETUP_GUIDE.md)** - Installation and NPM reference
+- **[Deployment Guide](./Documents/DEPLOYMENT_GUIDE.md)** - Production deployment instructions
+- **[Swagger Setup](./Documents/SWAGGER_SETUP.md)** - API documentation setup
+
+### Features & Implementation
 - **[Razorpay Payment Integration](./Documents/RAZORPAY_PAYMENT_INTEGRATION.md)** - Payment setup and testing
 - **[Order Intent Implementation](./Documents/ORDER_INTENT_IMPLEMENTATION.md)** - Order intent system
 - **[Admin Product Management](./Documents/IMPLEMENTATION_COMPLETE.md)** - Admin product management
-- **[Swagger Setup](./Documents/SWAGGER_SETUP.md)** - API documentation setup
+
+### Cleanup & Production Readiness
+- **[Cleanup Index](./Documents/CLEANUP_INDEX.md)** - 🎯 START HERE - Master guide for removing dummy data
+- **[Cleanup Guide](./Documents/CLEANUP_GUIDE.md)** - Complete cleanup instructions
+- **[Cleanup Checklist](./Documents/CLEANUP_CHECKLIST.md)** - Track your cleanup progress
+- **[Dummy Data Locations](./Documents/DUMMY_DATA_LOCATIONS.md)** - Quick reference of all dummy content
+- **[Image Replacement Guide](./Documents/IMAGE_REPLACEMENT_GUIDE.md)** - Step-by-step image replacement
 
 ## 🎨 Design Philosophy
 
