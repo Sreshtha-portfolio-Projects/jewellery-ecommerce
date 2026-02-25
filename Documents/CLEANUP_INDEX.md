@@ -6,12 +6,13 @@ This is your master guide for cleaning up all dummy/placeholder content from the
 
 ## 📚 Documentation Overview
 
-I've created **5 comprehensive guides** to help you clean up the portal:
+I've created **6 comprehensive guides** to help you clean up the portal:
 
 | Document | Purpose | Use When |
 |----------|---------|----------|
 | **CLEANUP_GUIDE.md** | Master guide with all cleanup steps | Start here for overview |
 | **CLEANUP_CHECKLIST.md** | Interactive checklist to track progress | Daily tracking |
+| **CLEANUP_ORDERS_CUSTOMERS_ANALYTICS.md** | Remove test orders and customer data | Cleaning test transactions |
 | **DUMMY_DATA_LOCATIONS.md** | Quick reference of exact file locations | Finding what to change |
 | **IMAGE_REPLACEMENT_GUIDE.md** | Step-by-step image replacement | Replacing images |
 | **cleanup-dummy-data.sql** | SQL script for database cleanup | Running database cleanup |
@@ -68,8 +69,10 @@ Use: **CLEANUP_CHECKLIST.md**
 **Database Dummy Content:**
 - ❌ 12 sample products with generic names and Unsplash images
 - ❌ 2 placeholder metal rates (gold/silver)
+- ❌ Test orders from dummy email addresses
+- ❌ Test customer accounts (priya@example.com, etc.)
 
-**Total Items to Clean:** ~15 major items
+**Total Items to Clean:** ~18 major items
 
 ---
 
@@ -77,23 +80,25 @@ Use: **CLEANUP_CHECKLIST.md**
 
 ### Priority 1: CRITICAL (Must Do Before Launch)
 1. **Delete sample products** from database
-2. **Add real products** with real images
-3. **Update metal rates** to current prices
-4. **Replace hero image** on homepage
-5. **Update admin emails** in .env file
+2. **Delete test orders** from database
+3. **Delete test customers** from Supabase Auth
+4. **Add real products** with real images
+5. **Update metal rates** to current prices
+6. **Replace hero image** on homepage
+7. **Update admin emails** in .env file
 
 ### Priority 2: IMPORTANT (Should Do Before Launch)
-6. **Replace promotional banners** (2 images)
-7. **Replace "Elevate Your Look" background**
-8. **Update "Get Inspired" gallery** (4 images)
-9. **Verify payment gateway** credentials
-10. **Review admin settings** (tax, shipping, etc.)
+8. **Replace promotional banners** (2 images)
+9. **Replace "Elevate Your Look" background**
+10. **Update "Get Inspired" gallery** (4 images)
+11. **Verify payment gateway** credentials
+12. **Review admin settings** (tax, shipping, etc.)
 
 ### Priority 3: POLISH (Can Do After Launch)
-11. **Handle testimonials** (replace/remove/connect to DB)
-12. **Add category-specific images**
-13. **Optimize all images** for performance
-14. **Add more product photos**
+13. **Handle testimonials** (replace/remove/connect to DB)
+14. **Add category-specific images**
+15. **Optimize all images** for performance
+16. **Add more product photos**
 
 ---
 
@@ -104,12 +109,14 @@ jewellery-ecommerce/
 ├── Documents/
 │   ├── CLEANUP_GUIDE.md              ← Master cleanup guide
 │   ├── CLEANUP_CHECKLIST.md          ← Track your progress
+│   ├── CLEANUP_ORDERS_CUSTOMERS_ANALYTICS.md  ← Clean test orders & customers
 │   ├── DUMMY_DATA_LOCATIONS.md       ← Quick reference
 │   ├── IMAGE_REPLACEMENT_GUIDE.md    ← Image upload guide
 │   └── (other documentation...)
 │
 ├── migrations/
-│   ├── cleanup-dummy-data.sql        ← Run this to clean DB
+│   ├── cleanup-dummy-data.sql        ← Run this to clean DB products
+│   ├── quick-cleanup-orders-customers.sql  ← Run this to clean orders & customers
 │   └── (other migration files...)
 │
 ├── frontend/src/
@@ -146,6 +153,11 @@ grep -rn "Sarah M\.\|Jessica T\." .
 -- Count sample products
 SELECT COUNT(*) FROM products WHERE image_url LIKE '%unsplash.com%';
 
+-- Count test orders
+SELECT COUNT(*) FROM orders o
+LEFT JOIN auth.users u ON o.user_id = u.id
+WHERE u.email LIKE '%@example.com%' OR u.email LIKE '%test%';
+
 -- Check metal rates source
 SELECT metal_type, source, last_updated FROM metal_rates;
 
@@ -168,10 +180,12 @@ Follow this order for most efficient cleanup:
 ```
 Day 1: Database Cleanup
 ├─ 1. Read CLEANUP_GUIDE.md overview
-├─ 2. Backup database (export products table)
-├─ 3. Run cleanup-dummy-data.sql
-├─ 4. Verify deletion
-└─ 5. Update metal rates via Admin Dashboard
+├─ 2. Backup database (export products, orders tables)
+├─ 3. Run cleanup-dummy-data.sql (products)
+├─ 4. Run quick-cleanup-orders-customers.sql (orders & customers)
+├─ 5. Delete test users from Supabase Auth Dashboard
+├─ 6. Verify deletion with SQL queries
+└─ 7. Update metal rates via Admin Dashboard
 
 Day 2: Add Real Products
 ├─ 1. Prepare product data (names, prices, descriptions)
@@ -235,6 +249,8 @@ Before going live, ensure:
 
 ### Database
 - [ ] Sample products deleted
+- [ ] Test orders deleted
+- [ ] Test customer accounts deleted
 - [ ] Real products added with correct pricing
 - [ ] Metal rates are current
 - [ ] Stock quantities are accurate
@@ -345,11 +361,13 @@ Once cleanup is done:
 
 **Most Important Documents:**
 1. CLEANUP_CHECKLIST.md (use daily)
-2. DUMMY_DATA_LOCATIONS.md (quick reference)
-3. IMAGE_REPLACEMENT_GUIDE.md (for images)
+2. CLEANUP_ORDERS_CUSTOMERS_ANALYTICS.md (for test data)
+3. DUMMY_DATA_LOCATIONS.md (quick reference)
+4. IMAGE_REPLACEMENT_GUIDE.md (for images)
 
-**SQL Script:**
-- migrations/cleanup-dummy-data.sql (run once)
+**SQL Scripts:**
+- migrations/cleanup-dummy-data.sql (for products)
+- migrations/quick-cleanup-orders-customers.sql (for orders/customers)
 
 ---
 

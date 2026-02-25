@@ -61,8 +61,13 @@ const getAllProducts = async (req, res) => {
       query = query.or(`name.ilike.%${search}%,description.ilike.%${search}%,sku.ilike.%${search}%`);
     }
 
-    if (is_active !== undefined && is_active !== '') {
+    // Default to active-only; pass is_active=all to show every product including soft-deleted
+    if (is_active === 'all') {
+      // no filter — return everything
+    } else if (is_active !== undefined && is_active !== '') {
       query = query.eq('is_active', is_active === 'true');
+    } else {
+      query = query.eq('is_active', true);
     }
 
     const { data: products, error, count } = await query;

@@ -32,6 +32,23 @@ Track your progress in cleaning up dummy/placeholder content from the Aldorado J
   - [ ] carts table (orphaned items)
   - [ ] wishlists table (orphaned items)
 
+### Database Orders & Customers
+- [ ] **Review test orders and customer accounts**
+  - Check `/admin/orders` for test orders
+  - Check `/admin/customers` for test customer accounts
+  - Document test email addresses to remove
+
+- [ ] **Clean test orders and customers**
+  - **Guide**: See `Documents/CLEANUP_ORDERS_CUSTOMERS_ANALYTICS.md` for detailed instructions
+  - Method 1 (Targeted): Remove only test data
+  - Method 2 (Complete Reset): Remove ALL orders and customers
+  - Verify: Check admin dashboard shows correct data
+
+- [ ] **Verify analytics data**
+  - [ ] Check `/admin/analytics` - revenue should reflect real orders only
+  - [ ] Sales trends should show accurate data
+  - [ ] Customer count should be correct
+
 ### Database Metal Rates
 - [ ] **Update gold and silver rates**
   - Method 1: Admin Dashboard `/admin/metal-rates` → Click "Update Metal Rates"

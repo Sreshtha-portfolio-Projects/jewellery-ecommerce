@@ -49,22 +49,8 @@ const Analytics = () => {
     );
   }
 
-  // Mock data for charts if API doesn't return data
-  const mockRevenueData = revenueByMetal.length > 0 ? revenueByMetal : [
-    { metal_type: 'Gold', revenue: 136170, percentage: 45 },
-    { metal_type: 'Diamond', revenue: 105910, percentage: 35 },
-    { metal_type: 'Silver', revenue: 60520, percentage: 20 },
-  ];
-
-  const mockSalesData = salesComparison.length > 0 ? salesComparison : [
-    { month: 'Jan', online: 120000, offline: 80000 },
-    { month: 'Feb', online: 150000, offline: 95000 },
-    { month: 'Mar', online: 180000, offline: 110000 },
-    { month: 'Apr', online: 140000, offline: 90000 },
-    { month: 'May', online: 200000, offline: 130000 },
-    { month: 'Jun', online: 220000, offline: 150000 },
-    { month: 'Jul', online: 190000, offline: 120000 },
-  ];
+  const displayRevenueData = revenueByMetal;
+  const displaySalesData = salesComparison;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -91,76 +77,112 @@ const Analytics = () => {
         {/* Revenue by Metal Type */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="font-serif text-xl font-bold text-gray-900 mb-6">Revenue by Metal Type</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={mockRevenueData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ metal_type, percentage }) => `${metal_type}: ${percentage}%`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="revenue"
-                >
-                  {mockRevenueData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => formatCurrency(value)} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="space-y-4">
-              {mockRevenueData.map((item, index) => (
-                <div key={item.metal_type} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    ></div>
-                    <span className="font-medium text-gray-900">{item.metal_type}</span>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-gray-900">{item.percentage || 0}%</p>
-                    <p className="text-sm text-gray-500">{formatCurrency(item.revenue || 0)}</p>
-                  </div>
-                </div>
-              ))}
+          {displayRevenueData.length === 0 ? (
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              <div className="text-center">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <p className="mt-4 text-lg font-medium">No revenue data available</p>
+                <p className="mt-1 text-sm">Data will appear once orders are placed</p>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={displayRevenueData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ metal_type, percentage }) => `${metal_type}: ${percentage}%`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="revenue"
+                  >
+                    {displayRevenueData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="space-y-4">
+                {displayRevenueData.map((item, index) => (
+                  <div key={item.metal_type} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                      ></div>
+                      <span className="font-medium text-gray-900">{item.metal_type}</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-gray-900">{item.percentage || 0}%</p>
+                      <p className="text-sm text-gray-500">{formatCurrency(item.revenue || 0)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Sales Comparison */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="font-serif text-xl font-bold text-gray-900 mb-6">Online vs Offline Sales</h2>
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={mockSalesData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip formatter={(value) => formatCurrency(value)} />
-              <Legend />
-              <Bar dataKey="online" fill="#3b82f6" name="Online" />
-              <Bar dataKey="offline" fill="#f97316" name="Offline" />
-            </BarChart>
-          </ResponsiveContainer>
+          {displaySalesData.length === 0 ? (
+            <div className="flex items-center justify-center h-96 text-gray-500">
+              <div className="text-center">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <p className="mt-4 text-lg font-medium">No sales data available</p>
+                <p className="mt-1 text-sm">Data will appear once orders are placed</p>
+              </div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={400}>
+              <BarChart data={displaySalesData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip formatter={(value) => formatCurrency(value)} />
+                <Legend />
+                <Bar dataKey="online" fill="#3b82f6" name="Online" />
+                <Bar dataKey="offline" fill="#f97316" name="Offline" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Sales Trend */}
         <div className="bg-white rounded-lg shadow-sm p-6">
           <h2 className="font-serif text-xl font-bold text-gray-900 mb-6">Sales Trend</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={mockSalesData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip formatter={(value) => formatCurrency(value)} />
-              <Legend />
-              <Line type="monotone" dataKey="online" stroke="#3b82f6" name="Online Sales" />
-              <Line type="monotone" dataKey="offline" stroke="#f97316" name="Offline Sales" />
-            </LineChart>
-          </ResponsiveContainer>
+          {displaySalesData.length === 0 ? (
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              <div className="text-center">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                </svg>
+                <p className="mt-4 text-lg font-medium">No sales trend data available</p>
+                <p className="mt-1 text-sm">Trends will appear once orders are placed</p>
+              </div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={displaySalesData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis />
+                <Tooltip formatter={(value) => formatCurrency(value)} />
+                <Legend />
+                <Line type="monotone" dataKey="online" stroke="#3b82f6" name="Online Sales" />
+                <Line type="monotone" dataKey="offline" stroke="#f97316" name="Offline Sales" />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
     </div>

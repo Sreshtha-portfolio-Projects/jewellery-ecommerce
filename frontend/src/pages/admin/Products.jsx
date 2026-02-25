@@ -103,9 +103,9 @@ const Products = () => {
               onChange={(e) => setFilters({ ...filters, is_active: e.target.value })}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
             >
-              <option value="">All Status</option>
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
+              <option value="">Active</option>
+              <option value="false">Inactive (Deleted)</option>
+              <option value="all">All</option>
             </select>
             <button
               onClick={() => setFilters({ search: '', category: '', is_active: '' })}

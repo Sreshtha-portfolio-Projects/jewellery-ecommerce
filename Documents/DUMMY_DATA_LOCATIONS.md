@@ -23,7 +23,18 @@ This document provides exact file paths and line numbers for all dummy/placehold
 | Table | Location | Content | Action Required |
 |-------|----------|---------|-----------------|
 | **products** | Supabase Database | 12 sample products with Unsplash images | Delete via SQL script |
+| **orders** | Supabase Database | Test orders from dummy email addresses | Delete via cleanup script |
+| **auth.users** | Supabase Auth | Test customer accounts (priya@example.com, etc.) | Delete via Supabase Dashboard |
 | **metal_rates** | Supabase Database | Placeholder gold/silver rates marked 'manual_seed' | Update via Admin Dashboard |
+
+### Test Email Addresses to Remove
+```
+sreshtha.form131@gmail.com
+sreshtha.mechlin@gmail.com
+priya@example.com
+ajay@example.com
+sneha@example.com
+```
 
 ### Sample Products to Delete
 Run this query to see them:
@@ -43,6 +54,28 @@ WHERE name IN (
   'Pearl Bracelet',
   'Diamond Tennis Bracelet'
 );
+```
+
+### Test Orders to Remove
+Run this query to see them:
+```sql
+SELECT 
+  o.order_number,
+  o.created_at,
+  u.email,
+  o.status,
+  o.payment_status,
+  o.total_amount
+FROM orders o
+LEFT JOIN auth.users u ON o.user_id = u.id
+WHERE u.email IN (
+  'sreshtha.form131@gmail.com',
+  'sreshtha.mechlin@gmail.com',
+  'priya@example.com',
+  'ajay@example.com',
+  'sneha@example.com'
+)
+ORDER BY o.created_at DESC;
 ```
 
 ---
@@ -72,19 +105,21 @@ WHERE name IN (
 
 ### 🔴 CRITICAL (Do First)
 1. **Database Products** - Delete 12 sample products
-2. **Database Metal Rates** - Update to current prices
-3. **Add Real Products** - Via Admin Dashboard
+2. **Database Orders** - Delete test orders from dummy emails
+3. **Database Customers** - Delete test customer accounts
+4. **Database Metal Rates** - Update to current prices
+5. **Add Real Products** - Via Admin Dashboard
 
 ### 🟡 IMPORTANT (Before Launch)
-4. **Hero Image** - `frontend/src/components/Hero.jsx:9`
-5. **Home Banners** - `frontend/src/pages/Home.jsx:20,26,39`
-6. **Get Inspired** - `frontend/src/components/GetInspired.jsx:3-6`
-7. **Admin Emails** - `backend/.env:6`
-8. **Payment Keys** - `backend/.env:8-10` (verify production)
+6. **Hero Image** - `frontend/src/components/Hero.jsx:9`
+7. **Home Banners** - `frontend/src/pages/Home.jsx:20,26,39`
+8. **Get Inspired** - `frontend/src/components/GetInspired.jsx:3-6`
+9. **Admin Emails** - `backend/.env:6`
+10. **Payment Keys** - `backend/.env:8-10` (verify production)
 
 ### 🟢 POLISH (Can Wait)
-9. **Testimonials** - `frontend/src/components/Testimonials.jsx:4-35`
-10. **Category Image** - `frontend/src/components/ShopByCategory.jsx:43`
+11. **Testimonials** - `frontend/src/components/Testimonials.jsx:4-35`
+12. **Category Image** - `frontend/src/components/ShopByCategory.jsx:43`
 
 ---
 
@@ -107,6 +142,30 @@ grep -r "unsplash.com" frontend/src | wc -l
 SELECT COUNT(*) FROM products WHERE image_url LIKE '%unsplash.com%';
 ```
 
+### Check test orders and customers:
+```sql
+-- Count test orders
+SELECT COUNT(*) as test_order_count
+FROM orders o
+LEFT JOIN auth.users u ON o.user_id = u.id
+WHERE u.email LIKE '%@example.com%' 
+   OR u.email LIKE '%test%'
+   OR u.email LIKE '%form131%'
+   OR u.email LIKE '%mechlin%';
+
+-- List test orders
+SELECT o.order_number, u.email, o.total_amount, o.status
+FROM orders o
+LEFT JOIN auth.users u ON o.user_id = u.id
+WHERE u.email IN (
+  'sreshtha.form131@gmail.com',
+  'sreshtha.mechlin@gmail.com',
+  'priya@example.com',
+  'ajay@example.com',
+  'sneha@example.com'
+);
+```
+
 ---
 
 ## 📝 File List for Editing
@@ -121,7 +180,9 @@ Copy this list to track which files you've updated:
 ☐ frontend/src/components/ShopByCategory.jsx
 ☐ backend/.env
 ☐ frontend/.env
-☐ Supabase Database (via SQL cleanup script)
+☐ Supabase Database - Products (via SQL cleanup script)
+☐ Supabase Database - Orders & Customers (via SQL cleanup script)
+☐ Supabase Auth - Delete test users manually
 ```
 
 ---
