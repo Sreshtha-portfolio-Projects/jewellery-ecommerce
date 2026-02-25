@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
 import { discountService } from '../../services/discountService';
@@ -12,12 +12,15 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const abortControllerRef = useRef(null);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  const fetchDashboardData = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-  const fetchDashboardData = async () => {
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       const [kpisData, ordersData, revenueData] = await Promise.all([
@@ -35,25 +38,37 @@ const Dashboard = () => {
         }),
         adminService.getRevenueByMetalType().catch((error) => {
           console.error('Error fetching revenue data:', error);
-          // Don't show error for revenue data as it's not critical
           return null;
         }),
       ]);
+
+      if (abortControllerRef.current?.signal.aborted) return;
+
       setKpis(kpisData);
       setOrders(ordersData?.orders || ordersData || []);
       setRevenueByMetal(revenueData);
     } catch (error) {
+      if (error.name === 'AbortError') return;
       console.error('Error fetching dashboard data:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to load dashboard data';
       showError(errorMessage);
-      // Set empty defaults on error
       setKpis(null);
       setOrders([]);
       setRevenueByMetal(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchDashboardData]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {

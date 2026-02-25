@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { discountService } from '../../services/discountService';
 import { showSuccess, showError } from '../../utils/toast';
 
@@ -17,51 +17,39 @@ const Discounts = () => {
     maxUses: '',
     expiresAt: ''
   });
+  const abortControllerRef = useRef(null);
 
-  useEffect(() => {
-    fetchDiscounts();
-  }, []);
-
-  // Populate form when editing discount
-  useEffect(() => {
-    if (editingDiscount) {
-      // Format expires_at for datetime-local input (YYYY-MM-DDTHH:mm)
-      let formattedExpiresAt = '';
-      if (editingDiscount.expires_at) {
-        const date = new Date(editingDiscount.expires_at);
-        // Convert to local datetime string in format YYYY-MM-DDTHH:mm
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        formattedExpiresAt = `${year}-${month}-${day}T${hours}:${minutes}`;
-      }
-
-      setFormData({
-        code: editingDiscount.code || '',
-        description: editingDiscount.description || '',
-        discountType: editingDiscount.discount_type || 'percentage',
-        discountValue: editingDiscount.discount_value?.toString() || '',
-        minimumCartValue: editingDiscount.minimum_cart_value?.toString() || '',
-        maxUses: editingDiscount.max_uses?.toString() || '',
-        expiresAt: formattedExpiresAt
-      });
-      setShowForm(true);
+  const fetchDiscounts = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
-  }, [editingDiscount]);
 
-  const fetchDiscounts = async () => {
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       const data = await discountService.getAll();
+      
+      if (abortControllerRef.current?.signal.aborted) return;
+
       setDiscounts(data || []);
     } catch (error) {
+      if (error.name === 'AbortError') return;
       console.error('Error fetching discounts:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDiscounts();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchDiscounts]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {

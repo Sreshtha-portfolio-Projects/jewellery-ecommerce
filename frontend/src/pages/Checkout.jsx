@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -29,11 +29,51 @@ const Checkout = () => {
     shipping: 0,
     total: 0
   });
+  const fetchInProgressRef = useRef(false);
+  const locationKey = useMemo(() => location.key, [location.key]);
+
+  const calculatePriceBreakdown = useCallback(() => {
+    const subtotal = cartItems.reduce((sum, item) => {
+      const price = parseFloat(item.products?.price || item.price || 0);
+      const qty = item.quantity || 0;
+      return sum + (price * qty);
+    }, 0);
+
+    const discount = appliedCoupon?.amount || 0;
+    const afterDiscount = subtotal - discount;
+    const tax = afterDiscount * 0.18;
+    const shipping = 0;
+    const total = afterDiscount + tax + shipping;
+
+    setPriceBreakdown({
+      subtotal,
+      discount,
+      tax,
+      shipping,
+      total: Math.max(0, total)
+    });
+  }, [cartItems, appliedCoupon]);
+
+  const fetchAddresses = useCallback(async () => {
+    if (fetchInProgressRef.current) return;
+
+    try {
+      fetchInProgressRef.current = true;
+      const data = await addressService.getAll();
+      setAddresses(data);
+      const defaultAddress = data.find(addr => addr.is_default) || data[0];
+      if (defaultAddress) {
+        setSelectedAddressId(defaultAddress.id);
+      }
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
+    } finally {
+      fetchInProgressRef.current = false;
+    }
+  }, []);
 
   useEffect(() => {
-    // Wait for auth to finish loading before checking
     if (isAuthenticated === false) {
-      // Store intended route before redirecting
       const intendedPath = location.pathname + location.search + location.hash;
       saveRedirectPath(intendedPath);
       navigate('/login', { state: { from: intendedPath } });
@@ -49,42 +89,7 @@ const Checkout = () => {
       fetchAddresses();
       calculatePriceBreakdown();
     }
-  }, [isAuthenticated, cartCount, navigate, appliedCoupon, location]);
-
-  const fetchAddresses = async () => {
-    try {
-      const data = await addressService.getAll();
-      setAddresses(data);
-      const defaultAddress = data.find(addr => addr.is_default) || data[0];
-      if (defaultAddress) {
-        setSelectedAddressId(defaultAddress.id);
-      }
-    } catch (error) {
-      console.error('Error fetching addresses:', error);
-    }
-  };
-
-  const calculatePriceBreakdown = () => {
-    const subtotal = cartItems.reduce((sum, item) => {
-      const price = parseFloat(item.products?.price || item.price || 0);
-      const qty = item.quantity || 0;
-      return sum + (price * qty);
-    }, 0);
-
-    const discount = appliedCoupon?.amount || 0;
-    const afterDiscount = subtotal - discount;
-    const tax = afterDiscount * 0.18; // 18% GST
-    const shipping = 0; // Free shipping
-    const total = afterDiscount + tax + shipping;
-
-    setPriceBreakdown({
-      subtotal,
-      discount,
-      tax,
-      shipping,
-      total: Math.max(0, total)
-    });
-  };
+  }, [isAuthenticated, cartCount, navigate, locationKey, fetchAddresses, calculatePriceBreakdown]);
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {

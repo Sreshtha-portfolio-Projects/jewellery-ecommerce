@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { cartService } from '../services/cartService';
 import { useAuth } from './AuthContext';
 
@@ -8,14 +8,20 @@ export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const { isAuthenticated } = useAuth();
+  const fetchInProgressRef = useRef(false);
 
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     if (!isAuthenticated) {
       setCartItems([]);
       return;
     }
 
+    if (fetchInProgressRef.current) {
+      return;
+    }
+
     try {
+      fetchInProgressRef.current = true;
       setLoading(true);
       const items = await cartService.getCart();
       setCartItems(items || []);
@@ -24,12 +30,13 @@ export const CartProvider = ({ children }) => {
       setCartItems([]);
     } finally {
       setLoading(false);
+      fetchInProgressRef.current = false;
     }
-  };
+  }, [isAuthenticated]);
 
   useEffect(() => {
     fetchCart();
-  }, [isAuthenticated]);
+  }, [fetchCart]);
 
   const addToCart = async (productId, quantity = 1, variantId = null) => {
     if (!isAuthenticated) {

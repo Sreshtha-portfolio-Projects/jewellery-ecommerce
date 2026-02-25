@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
 import { showSuccess, showError } from '../../utils/toast';
@@ -12,24 +12,41 @@ const Returns = () => {
   const [showActionModal, setShowActionModal] = useState(false);
   const [actionType, setActionType] = useState(null);
   const [formData, setFormData] = useState({});
+  const abortControllerRef = useRef(null);
 
-  useEffect(() => {
-    fetchReturns();
-  }, [statusFilter]);
+  const fetchReturns = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-  const fetchReturns = async () => {
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       const status = statusFilter === 'all' ? null : statusFilter;
       const data = await adminService.getAllReturnRequests(status);
+      
+      if (abortControllerRef.current?.signal.aborted) return;
+
       setReturns(data.returns || data || []);
     } catch (error) {
+      if (error.name === 'AbortError') return;
       console.error('Error fetching returns:', error);
       showError('Failed to load return requests');
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter]);
+
+  useEffect(() => {
+    fetchReturns();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchReturns]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {

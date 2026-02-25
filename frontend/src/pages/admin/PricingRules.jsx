@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { adminService } from '../../services/adminService';
 import { showError, showSuccess, showConfirm } from '../../utils/toast';
 
@@ -19,22 +19,39 @@ const PricingRules = () => {
     valid_from: '',
     valid_until: ''
   });
+  const abortControllerRef = useRef(null);
 
-  useEffect(() => {
-    fetchRules();
-  }, []);
+  const fetchRules = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-  const fetchRules = async () => {
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       const data = await adminService.getPricingRules();
+      
+      if (abortControllerRef.current?.signal.aborted) return;
+
       setRules(data.rules || []);
     } catch (error) {
+      if (error.name === 'AbortError') return;
       console.error('Error fetching pricing rules:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchRules();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchRules]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

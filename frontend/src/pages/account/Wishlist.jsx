@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { wishlistService } from '../../services/wishlistService';
 import { productService } from '../../services/productService';
@@ -8,30 +8,49 @@ const Wishlist = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const abortControllerRef = useRef(null);
 
-  useEffect(() => {
-    fetchWishlist();
-  }, []);
+  const fetchWishlist = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-  const fetchWishlist = async () => {
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       const wishlistData = await wishlistService.getWishlist();
+      
+      if (abortControllerRef.current?.signal.aborted) return;
+
       setWishlistItems(wishlistData);
 
-      // Fetch product details for each wishlist item
       if (wishlistData.length > 0) {
         const productIds = wishlistData.map((item) => item.product_id);
         const productPromises = productIds.map((id) => productService.getById(id));
         const productData = await Promise.all(productPromises);
+        
+        if (abortControllerRef.current?.signal.aborted) return;
+
         setProducts(productData);
       }
     } catch (err) {
+      if (err.name === 'AbortError') return;
       setError(err.response?.data?.message || 'Failed to load wishlist');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchWishlist();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchWishlist]);
 
   const handleRemove = async (productId) => {
     try {

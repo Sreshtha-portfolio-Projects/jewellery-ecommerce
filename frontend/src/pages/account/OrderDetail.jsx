@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { orderService } from '../../services/orderService';
@@ -20,6 +20,42 @@ const OrderDetail = () => {
   const [cancelling, setCancelling] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const abortControllerRef = useRef(null);
+
+  const fetchOrderDetail = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+
+    try {
+      setLoading(true);
+      const data = await orderService.getOrderById(orderId);
+      
+      if (abortControllerRef.current?.signal.aborted) return;
+
+      setOrderData(data);
+      setError(null);
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.error('Error fetching order detail:', err);
+      setError(err.response?.data?.message || 'Failed to load order details');
+    } finally {
+      setLoading(false);
+    }
+  }, [orderId]);
+
+  const fetchReturnRequest = useCallback(async () => {
+    try {
+      const data = await returnService.getReturnRequestByOrder(orderId);
+      setReturnRequest(data);
+    } catch (err) {
+      if (err.response?.status !== 404) {
+        console.error('Error fetching return request:', err);
+      }
+    }
+  }, [orderId]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -35,33 +71,13 @@ const OrderDetail = () => {
 
     fetchOrderDetail();
     fetchReturnRequest();
-  }, [orderId, isAuthenticated, navigate]);
 
-  const fetchOrderDetail = async () => {
-    try {
-      setLoading(true);
-      const data = await orderService.getOrderById(orderId);
-      setOrderData(data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching order detail:', err);
-      setError(err.response?.data?.message || 'Failed to load order details');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchReturnRequest = async () => {
-    try {
-      const data = await returnService.getReturnRequestByOrder(orderId);
-      setReturnRequest(data);
-    } catch (err) {
-      // Return request doesn't exist yet, which is fine
-      if (err.response?.status !== 404) {
-        console.error('Error fetching return request:', err);
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-    }
-  };
+    };
+  }, [orderId, isAuthenticated, navigate, fetchOrderDetail, fetchReturnRequest]);
 
   const handleRequestReturn = async () => {
     if (!returnReason) {

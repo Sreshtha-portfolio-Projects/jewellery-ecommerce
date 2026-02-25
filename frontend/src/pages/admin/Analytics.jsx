@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { adminService } from '../../services/adminService';
 
@@ -7,26 +7,43 @@ const Analytics = () => {
   const [salesComparison, setSalesComparison] = useState([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('7');
+  const abortControllerRef = useRef(null);
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, [period]);
+  const fetchAnalytics = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-  const fetchAnalytics = async () => {
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       const [revenueData, salesData] = await Promise.all([
         adminService.getRevenueByMetalType(),
         adminService.getSalesComparison('monthly'),
       ]);
+
+      if (abortControllerRef.current?.signal.aborted) return;
+
       setRevenueByMetal(revenueData || []);
       setSalesComparison(salesData || []);
     } catch (error) {
+      if (error.name === 'AbortError') return;
       console.error('Error fetching analytics:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [period]);
+
+  useEffect(() => {
+    fetchAnalytics();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchAnalytics]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {

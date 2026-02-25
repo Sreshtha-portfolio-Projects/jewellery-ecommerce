@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
 
@@ -9,22 +9,39 @@ const Orders = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
+  const abortControllerRef = useRef(null);
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  const fetchOrders = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-  const fetchOrders = async () => {
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       const data = await adminService.getAllOrders();
+      
+      if (abortControllerRef.current?.signal.aborted) return;
+
       setOrders(data.orders || data || []);
     } catch (error) {
+      if (error.name === 'AbortError') return;
       console.error('Error fetching orders:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchOrders();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchOrders]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {

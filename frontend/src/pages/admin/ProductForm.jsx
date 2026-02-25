@@ -245,19 +245,21 @@ const ProductForm = () => {
     if (errors[field]) setErrors((e) => ({ ...e, [field]: '' }));
   };
 
-  // ── Load for edit + fetch stored metal rates ────────────────────────────
-  useEffect(() => {
-    if (isEdit) fetchProduct();
-    // Load stored rates silently so we can auto-fill when "Use Live Rate" is ticked
-    metalRatesService.getCurrentRates()
-      .then((data) => { liveRatesRef.current = { gold: data.gold, silver: data.silver }; })
-      .catch(() => {}); // non-fatal
-  }, [id]);
+  const abortControllerRef = useRef(null);
 
-  const fetchProduct = async () => {
+  const fetchProduct = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       const data = await adminService.getProductById(id);
+      
+      if (abortControllerRef.current?.signal.aborted) return;
+
       setProduct({
         name: data.name || '',
         description: data.description || '',
@@ -279,13 +281,28 @@ const ProductForm = () => {
       setStones(data.stones || []);
       setLabour(data.labour || []);
       setImages(data.images || []);
-    } catch {
+    } catch (error) {
+      if (error.name === 'AbortError') return;
       showError('Failed to load product');
       navigate('/admin/products');
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, navigate]);
+
+  useEffect(() => {
+    if (isEdit) fetchProduct();
+    
+    metalRatesService.getCurrentRates()
+      .then((data) => { liveRatesRef.current = { gold: data.gold, silver: data.silver }; })
+      .catch(() => {});
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [isEdit, fetchProduct]);
 
   // ── Image handlers ──────────────────────────────────────────────────────
   const handleAddImage = () => {

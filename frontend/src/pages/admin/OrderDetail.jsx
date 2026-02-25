@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
 import { showSuccess, showError } from '../../utils/toast';
@@ -10,8 +10,8 @@ const OrderDetail = () => {
   const [orderData, setOrderData] = useState(null);
   const [nextStatuses, setNextStatuses] = useState(null);
   const [error, setError] = useState(null);
+  const abortControllerRef = useRef(null);
   
-  // Shipping form state
   const [showCreateShipment, setShowCreateShipment] = useState(false);
   const [showUpdateStatus, setShowUpdateStatus] = useState(false);
   const [showUpdateDetails, setShowUpdateDetails] = useState(false);
@@ -22,35 +22,51 @@ const OrderDetail = () => {
   const [selectedStatus, setSelectedStatus] = useState('');
   const [updating, setUpdating] = useState(false);
 
-  useEffect(() => {
-    fetchOrderDetail();
-    fetchNextStatuses();
-  }, [id]);
+  const fetchOrderDetail = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-  const fetchOrderDetail = async () => {
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       const data = await adminService.getOrderDetails(id);
+      
+      if (abortControllerRef.current?.signal.aborted) return;
+
       setOrderData(data);
       setCourierName(data.courier_name || '');
       setTrackingNumber(data.tracking_number || '');
       setError(null);
     } catch (err) {
+      if (err.name === 'AbortError') return;
       console.error('Error fetching order detail:', err);
       setError(err.response?.data?.message || 'Failed to load order details');
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  const fetchNextStatuses = async () => {
+  const fetchNextStatuses = useCallback(async () => {
     try {
       const data = await adminService.getNextValidStatuses(id);
       setNextStatuses(data);
     } catch (err) {
       console.error('Error fetching next statuses:', err);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchOrderDetail();
+    fetchNextStatuses();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchOrderDetail, fetchNextStatuses]);
 
   const formatDate = (dateString) => {
     if (!dateString) return '';

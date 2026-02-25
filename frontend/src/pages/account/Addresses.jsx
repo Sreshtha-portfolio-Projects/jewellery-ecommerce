@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { addressService } from '../../services/addressService';
 import { showError, showSuccess, showConfirm } from '../../utils/toast';
 
@@ -19,22 +19,39 @@ const Addresses = () => {
     country: 'India',
     is_default: false,
   });
+  const abortControllerRef = useRef(null);
 
-  useEffect(() => {
-    fetchAddresses();
-  }, []);
+  const fetchAddresses = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-  const fetchAddresses = async () => {
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       const data = await addressService.getAll();
+      
+      if (abortControllerRef.current?.signal.aborted) return;
+
       setAddresses(data);
     } catch (err) {
+      if (err.name === 'AbortError') return;
       setError(err.response?.data?.message || 'Failed to load addresses');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchAddresses();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchAddresses]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

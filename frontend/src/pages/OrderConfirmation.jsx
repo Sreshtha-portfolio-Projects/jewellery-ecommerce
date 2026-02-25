@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { orderService } from '../services/orderService';
@@ -13,7 +13,52 @@ const OrderConfirmation = () => {
   const [orderData, setOrderData] = useState(null);
   const [error, setError] = useState(null);
   const [pollCount, setPollCount] = useState(0);
-  const maxPollAttempts = 10; // Poll for up to 10 times (50 seconds total)
+  const maxPollAttempts = 10;
+  const abortControllerRef = useRef(null);
+  const pollingTimeoutRef = useRef(null);
+
+  const fetchOrderConfirmation = useCallback(async (isPolling = false) => {
+    try {
+      if (isPolling) {
+        setConfirming(true);
+      }
+
+      const data = await orderService.getOrderConfirmation(orderId);
+      
+      if (data && data.order) {
+        setOrderData(data);
+        setLoading(false);
+        setConfirming(false);
+        setError(null);
+      } else if (isPolling && pollCount < maxPollAttempts) {
+        pollingTimeoutRef.current = setTimeout(() => {
+          setPollCount(prev => prev + 1);
+          fetchOrderConfirmation(true);
+        }, 5000);
+      } else {
+        setError('Order confirmation is taking longer than expected. Please check your orders page.');
+        setLoading(false);
+        setConfirming(false);
+      }
+    } catch (err) {
+      if (err.response?.status === 404 && !isPolling && pollCount === 0) {
+        setConfirming(true);
+        pollingTimeoutRef.current = setTimeout(() => {
+          setPollCount(1);
+          fetchOrderConfirmation(true);
+        }, 5000);
+      } else if (pollCount < maxPollAttempts && isPolling) {
+        pollingTimeoutRef.current = setTimeout(() => {
+          setPollCount(prev => prev + 1);
+          fetchOrderConfirmation(true);
+        }, 5000);
+      } else {
+        setError(err.response?.data?.message || 'Failed to load order confirmation');
+        setLoading(false);
+        setConfirming(false);
+      }
+    }
+  }, [orderId, pollCount, maxPollAttempts]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -28,55 +73,16 @@ const OrderConfirmation = () => {
     }
 
     fetchOrderConfirmation();
-  }, [orderId, isAuthenticated, navigate]);
 
-  const fetchOrderConfirmation = async (isPolling = false) => {
-    try {
-      if (isPolling) {
-        setConfirming(true);
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
-
-      const data = await orderService.getOrderConfirmation(orderId);
-      
-      // If order exists and is confirmed, set data
-      if (data && data.order) {
-        setOrderData(data);
-        setLoading(false);
-        setConfirming(false);
-        setError(null);
-      } else if (isPolling && pollCount < maxPollAttempts) {
-        // Order might still be processing, poll again
-        setTimeout(() => {
-          setPollCount(prev => prev + 1);
-          fetchOrderConfirmation(true);
-        }, 5000); // Poll every 5 seconds
-      } else {
-        // Max polling attempts reached or order not found
-        setError('Order confirmation is taking longer than expected. Please check your orders page.');
-        setLoading(false);
-        setConfirming(false);
+      if (pollingTimeoutRef.current) {
+        clearTimeout(pollingTimeoutRef.current);
       }
-    } catch (err) {
-      // If order not found and we haven't polled yet, start polling
-      if (err.response?.status === 404 && !isPolling && pollCount === 0) {
-        setConfirming(true);
-        setTimeout(() => {
-          setPollCount(1);
-          fetchOrderConfirmation(true);
-        }, 5000);
-      } else if (pollCount < maxPollAttempts && isPolling) {
-        // Continue polling
-        setTimeout(() => {
-          setPollCount(prev => prev + 1);
-          fetchOrderConfirmation(true);
-        }, 5000);
-      } else {
-        setError(err.response?.data?.message || 'Failed to load order confirmation');
-        setLoading(false);
-        setConfirming(false);
-      }
-    }
-  };
+    };
+  }, [orderId, isAuthenticated, navigate, fetchOrderConfirmation]);
 
   const copyOrderId = () => {
     if (orderData?.order?.order_number) {

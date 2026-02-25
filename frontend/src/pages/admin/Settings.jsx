@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { adminService } from '../../services/adminService';
 
 const Settings = () => {
@@ -6,23 +6,40 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  const abortControllerRef = useRef(null);
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
+  const loadSettings = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-  const loadSettings = async () => {
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       const response = await adminService.getSettings();
+      
+      if (abortControllerRef.current?.signal.aborted) return;
+
       setSettings(response.settings || {});
     } catch (error) {
+      if (error.name === 'AbortError') return;
       console.error('Error loading settings:', error);
       setMessage({ type: 'error', text: 'Failed to load settings' });
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadSettings();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [loadSettings]);
 
   const handleSave = async (category, key, value) => {
     try {

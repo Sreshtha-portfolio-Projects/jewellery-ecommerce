@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
 import { showError, showSuccess, showConfirm } from '../../utils/toast';
@@ -9,18 +9,31 @@ const Products = () => {
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0 });
   const [filters, setFilters] = useState({ search: '', category: '', is_active: '' });
+  const abortControllerRef = useRef(null);
 
-  useEffect(() => {
-    fetchProducts();
-  }, [pagination.page, filters]);
+  const memoizedFilters = useMemo(() => ({
+    search: filters.search,
+    category: filters.category,
+    is_active: filters.is_active
+  }), [filters.search, filters.category, filters.is_active]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
-      const data = await adminService.getAllProducts(pagination.page, pagination.limit, filters);
+      const data = await adminService.getAllProducts(pagination.page, pagination.limit, memoizedFilters);
+      
+      if (abortControllerRef.current?.signal.aborted) return;
+
       setProducts(data.products || []);
       setPagination(prev => ({ ...prev, ...data.pagination }));
     } catch (error) {
+      if (error.name === 'AbortError') return;
       console.error('Error fetching products:', error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to load products';
       showError(errorMessage);
@@ -28,7 +41,17 @@ const Products = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.page, pagination.limit, memoizedFilters]);
+
+  useEffect(() => {
+    fetchProducts();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchProducts]);
 
   const handleDelete = async (id) => {
     const confirmed = await showConfirm('Are you sure you want to delete this product?');

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { adminService } from '../../services/adminService';
 import { showSuccess, showError } from '../../utils/toast';
 
@@ -9,8 +9,8 @@ const DeliveryZones = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingZone, setEditingZone] = useState(null);
   const [filterOptions, setFilterOptions] = useState({ categories: [], metalTypes: [] });
+  const abortControllerRef = useRef(null);
   
-  // Form state
   const [formData, setFormData] = useState({
     pincode: '',
     city: '',
@@ -25,36 +25,58 @@ const DeliveryZones = () => {
     notes: ''
   });
 
-  useEffect(() => {
-    fetchZones();
-    fetchFilterOptions();
-  }, [filters]);
+  const memoizedFilters = useMemo(() => ({
+    pincode: filters.pincode,
+    category: filters.category,
+    product_id: filters.product_id
+  }), [filters.pincode, filters.category, filters.product_id]);
 
-  const fetchZones = async () => {
+  const fetchZones = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       const data = await adminService.getAllDeliveryZones(
-        filters.pincode,
-        filters.category,
-        filters.product_id
+        memoizedFilters.pincode,
+        memoizedFilters.category,
+        memoizedFilters.product_id
       );
+
+      if (abortControllerRef.current?.signal.aborted) return;
+
       setZones(data.zones || []);
     } catch (error) {
+      if (error.name === 'AbortError') return;
       console.error('Error fetching delivery zones:', error);
       showError('Failed to load delivery zones');
     } finally {
       setLoading(false);
     }
-  };
+  }, [memoizedFilters]);
 
-  const fetchFilterOptions = async () => {
+  const fetchFilterOptions = useCallback(async () => {
     try {
       const data = await adminService.getDeliveryZoneFilters();
       setFilterOptions(data);
     } catch (error) {
       console.error('Error fetching filter options:', error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchZones();
+    fetchFilterOptions();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchZones, fetchFilterOptions]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

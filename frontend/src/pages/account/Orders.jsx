@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { orderService } from '../../services/orderService';
 
@@ -6,22 +6,39 @@ const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const abortControllerRef = useRef(null);
 
-  useEffect(() => {
-    fetchOrders();
-  }, []);
+  const fetchOrders = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-  const fetchOrders = async () => {
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       const data = await orderService.getOrders();
+      
+      if (abortControllerRef.current?.signal.aborted) return;
+
       setOrders(data);
     } catch (err) {
+      if (err.name === 'AbortError') return;
       setError(err.response?.data?.message || 'Failed to load orders');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchOrders();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchOrders]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {

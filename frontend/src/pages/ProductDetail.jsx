@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { productService } from '../services/productService';
 import { deliveryService } from '../services/deliveryService';
@@ -33,12 +33,15 @@ const ProductDetail = () => {
   const { isAuthenticated } = useAuth();
   const [addingToCart, setAddingToCart] = useState(false);
   const [message, setMessage] = useState('');
+  const abortControllerRef = useRef(null);
 
-  useEffect(() => {
-    fetchProductData();
-  }, [id]);
+  const fetchProductData = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
 
-  const fetchProductData = async () => {
+    abortControllerRef.current = new AbortController();
+
     try {
       setLoading(true);
       const [productData, reviewsData, relatedData] = await Promise.all([
@@ -47,22 +50,34 @@ const ProductDetail = () => {
         productPairingService.getPairedProducts(id).catch(() => ({ products: [] }))
       ]);
       
+      if (abortControllerRef.current?.signal.aborted) return;
+
       setProduct(productData);
       setReviews(reviewsData.reviews || []);
       setReviewSummary(reviewsData.summary);
       setRelatedProducts(relatedData.products || []);
       
-      // Set default variant if available
       if (productData.variants && productData.variants.length > 0) {
         setSelectedVariant(productData.variants[0]);
       }
     } catch (error) {
+      if (error.name === 'AbortError') return;
       console.error('Error fetching product:', error);
       showError('Failed to load product. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    fetchProductData();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchProductData]);
 
   const handleCheckDelivery = async () => {
     if (!pincode || pincode.length !== 6) {

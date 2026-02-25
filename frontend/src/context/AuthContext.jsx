@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { customerAuthService } from '../services/customerAuthService';
 
 const AuthContext = createContext(null);
@@ -6,35 +6,41 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const checkAuthInProgressRef = useRef(false);
 
-  useEffect(() => {
-    // Check if user is authenticated on mount
-    const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
+    if (checkAuthInProgressRef.current) {
+      return;
+    }
+
+    checkAuthInProgressRef.current = true;
+
+    try {
       if (customerAuthService.isAuthenticated()) {
         try {
           const profile = await customerAuthService.getProfile();
           setUser(profile);
         } catch (error) {
-          // Token might be invalid, clear it
           customerAuthService.logout();
           setUser(null);
         }
       } else {
         setUser(null);
       }
+    } finally {
       setLoading(false);
-    };
+      checkAuthInProgressRef.current = false;
+    }
+  }, []);
 
+  useEffect(() => {
     checkAuth();
 
-    // Listen for storage events to sync auth state across tabs
     const handleStorageChange = (e) => {
       if (e.key === 'customerToken') {
         if (e.newValue) {
-          // Token was added/updated in another tab, refresh user
           checkAuth();
         } else {
-          // Token was removed in another tab, clear user
           setUser(null);
         }
       }
@@ -42,13 +48,11 @@ export const AuthProvider = ({ children }) => {
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [checkAuth]);
 
   const login = async (email, password) => {
     const response = await customerAuthService.login(email, password);
     if (response.token) {
-      // Ensure token is stored before making profile request
-      // Add small delay to ensure localStorage is updated and axios interceptor picks it up
       await new Promise(resolve => setTimeout(resolve, 100));
       
       try {
@@ -57,7 +61,6 @@ export const AuthProvider = ({ children }) => {
         return profile;
       } catch (error) {
         console.error('Error fetching profile after login:', error);
-        // If profile fetch fails but we have token, use the user data from login response
         if (response.user) {
           setUser(response.user);
           return response.user;
@@ -71,7 +74,6 @@ export const AuthProvider = ({ children }) => {
   const signup = async (email, password, fullName, mobile) => {
     const response = await customerAuthService.signup(email, password, fullName, mobile);
     if (response.token) {
-      // Ensure token is stored before making profile request
       await new Promise(resolve => setTimeout(resolve, 100));
       
       try {
@@ -80,7 +82,6 @@ export const AuthProvider = ({ children }) => {
         return profile;
       } catch (error) {
         console.error('Error fetching profile after signup:', error);
-        // If profile fetch fails but we have token, use the user data from signup response
         if (response.user) {
           setUser(response.user);
           return response.user;
@@ -96,9 +97,9 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
-  const updateUser = (userData) => {
+  const updateUser = useCallback((userData) => {
     setUser(userData);
-  };
+  }, []);
 
   const value = {
     user,

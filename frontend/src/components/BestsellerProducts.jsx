@@ -1,26 +1,43 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { productService } from '../services/productService';
 import ProductCard from './ProductCard';
 
 const BestsellerProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const abortControllerRef = useRef(null);
+
+  const fetchProducts = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+
+    try {
+      const data = await productService.getAll();
+      
+      if (abortControllerRef.current?.signal.aborted) return;
+
+      const bestsellers = data.filter(p => p.is_bestseller).slice(0, 8);
+      setProducts(bestsellers.length > 0 ? bestsellers : data.slice(0, 8));
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const data = await productService.getAll();
-        // Filter bestsellers or take first 8
-        const bestsellers = data.filter(p => p.is_bestseller).slice(0, 8);
-        setProducts(bestsellers.length > 0 ? bestsellers : data.slice(0, 8));
-      } catch (error) {
-        console.error('Error fetching products:', error);
-      } finally {
-        setLoading(false);
+    fetchProducts();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
-    fetchProducts();
-  }, []);
+  }, [fetchProducts]);
 
   if (loading) {
     return (

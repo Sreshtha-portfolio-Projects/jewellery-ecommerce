@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { productService } from '../services/productService';
 import ProductCard from '../components/ProductCard';
@@ -8,32 +8,50 @@ const Products = () => {
   const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const abortControllerRef = useRef(null);
+
+  const search = useMemo(() => searchParams.get('search'), [searchParams]);
+  const shape = useMemo(() => searchParams.get('shape'), [searchParams]);
+
+  const fetchProducts = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    abortControllerRef.current = new AbortController();
+
+    try {
+      setLoading(true);
+      
+      let data;
+      if (search) {
+        data = await productService.search(search);
+      } else if (category) {
+        data = await productService.getByCategory(category);
+      } else {
+        data = await productService.getAll();
+      }
+
+      if (abortControllerRef.current?.signal.aborted) return;
+      
+      setProducts(data);
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [category, search]);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const search = searchParams.get('search');
-        const shape = searchParams.get('shape');
-        
-        let data;
-        if (search) {
-          data = await productService.search(search);
-        } else if (category) {
-          data = await productService.getByCategory(category);
-        } else {
-          data = await productService.getAll();
-        }
-        
-        setProducts(data);
-      } catch (error) {
-        console.error('Error fetching products:', error);
-      } finally {
-        setLoading(false);
+    fetchProducts();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
-    fetchProducts();
-  }, [category, searchParams]);
+  }, [fetchProducts]);
 
   const searchTerm = searchParams.get('search');
   const categoryTitle = searchTerm 
