@@ -1,0 +1,108 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e7]: 👑
+      - generic [ref=e8]:
+        - heading "Aldorado Jewells" [level=1] [ref=e9]
+        - paragraph [ref=e10]: Business Hub
+    - navigation [ref=e11]:
+      - list [ref=e12]:
+        - listitem [ref=e13]:
+          - link "📊 Dashboard" [ref=e14] [cursor=pointer]:
+            - /url: /admin/dashboard
+            - generic [ref=e15]: 📊
+            - generic [ref=e16]: Dashboard
+        - listitem [ref=e17]:
+          - link "💎 Products" [ref=e18] [cursor=pointer]:
+            - /url: /admin/products
+            - generic [ref=e19]: 💎
+            - generic [ref=e20]: Products
+        - listitem [ref=e21]:
+          - link "📦 Orders" [ref=e22] [cursor=pointer]:
+            - /url: /admin/orders
+            - generic [ref=e23]: 📦
+            - generic [ref=e24]: Orders
+        - listitem [ref=e25]:
+          - link "🔄 Returns" [ref=e26] [cursor=pointer]:
+            - /url: /admin/returns
+            - generic [ref=e27]: 🔄
+            - generic [ref=e28]: Returns
+        - listitem [ref=e29]:
+          - link "📈 Analytics" [ref=e30] [cursor=pointer]:
+            - /url: /admin/analytics
+            - generic [ref=e31]: 📈
+            - generic [ref=e32]: Analytics
+        - listitem [ref=e33]:
+          - link "🎫 Discounts" [ref=e34] [cursor=pointer]:
+            - /url: /admin/discounts
+            - generic [ref=e35]: 🎫
+            - generic [ref=e36]: Discounts
+        - listitem [ref=e37]:
+          - link "💰 Pricing Rules" [ref=e38] [cursor=pointer]:
+            - /url: /admin/pricing-rules
+            - generic [ref=e39]: 💰
+            - generic [ref=e40]: Pricing Rules
+        - listitem [ref=e41]:
+          - link "⚖️ Metal Rates" [ref=e42] [cursor=pointer]:
+            - /url: /admin/metal-rates
+            - generic [ref=e43]: ⚖️
+            - generic [ref=e44]: Metal Rates
+        - listitem [ref=e45]:
+          - link "🛒 Abandoned Carts" [ref=e46] [cursor=pointer]:
+            - /url: /admin/abandoned-carts
+            - generic [ref=e47]: 🛒
+            - generic [ref=e48]: Abandoned Carts
+        - listitem [ref=e49]:
+          - link "👥 Customers" [ref=e50] [cursor=pointer]:
+            - /url: /admin/customers
+            - generic [ref=e51]: 👥
+            - generic [ref=e52]: Customers
+        - listitem [ref=e53]:
+          - link "⚙️ Settings" [ref=e54] [cursor=pointer]:
+            - /url: /admin/settings
+            - generic [ref=e55]: ⚙️
+            - generic [ref=e56]: Settings
+    - generic [ref=e58]:
+      - generic [ref=e61]: Premium Plan
+      - paragraph [ref=e62]: Upgrade for advanced analytics and unlimited features.
+  - main [ref=e63]:
+    - button "🚪 Logout" [ref=e65] [cursor=pointer]:
+      - generic [ref=e66]: 🚪
+      - generic [ref=e67]: Logout
+    - generic [ref=e68]:
+      - generic [ref=e69]:
+        - heading "Orders" [level=1] [ref=e70]
+        - paragraph [ref=e71]: Manage and track all customer orders
+      - generic [ref=e73]:
+        - generic [ref=e74]:
+          - textbox "Search orders, order number, customer..." [ref=e75]
+          - combobox [ref=e76]:
+            - option "All Order Statuses" [selected]
+            - option "Pending"
+            - option "Paid"
+            - option "Shipped"
+            - option "Delivered"
+            - option "Returned"
+          - combobox [ref=e77]:
+            - option "All Payment Statuses" [selected]
+            - option "Paid"
+            - option "Payment Pending"
+            - option "Failed"
+        - table [ref=e79]:
+          - rowgroup [ref=e80]:
+            - 'row "Order # Date & Time Customer Items Order Value Payment Fulfillment Actions" [ref=e81]':
+              - 'columnheader "Order #" [ref=e82]'
+              - columnheader "Date & Time" [ref=e83]
+              - columnheader "Customer" [ref=e84]
+              - columnheader "Items" [ref=e85]
+              - columnheader "Order Value" [ref=e86]
+              - columnheader "Payment" [ref=e87]
+              - columnheader "Fulfillment" [ref=e88]
+              - columnheader "Actions" [ref=e89]
+          - rowgroup [ref=e90]:
+            - row "No orders found" [ref=e91]:
+              - cell "No orders found" [ref=e92]
+```

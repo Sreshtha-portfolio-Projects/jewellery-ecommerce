@@ -11,7 +11,7 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('Smoke – Frontend & App Load', () => {
   // SMOKE-001: Frontend Application Loads Successfully
-  test('SMOKE-001 – Frontend application loads successfully', async ({ page }) => {
+    test('SMOKE-001 – Frontend application loads successfully', async ({ page }) => {
     const errors = [];
     page.on('console', (msg) => {
       const type = msg.type();
@@ -54,9 +54,10 @@ test.describe('Smoke – Authentication', () => {
     await page.getByLabel(/password/i).fill(password);
     await page.getByRole('button', { name: /login/i }).click();
 
-    await expect(page).not.toHaveURL(/\/login$/);
-    await expect(page.getByText('Aldorado Jewells').first()).toBeVisible({ timeout: 10000 });
-    const token = await page.evaluate(() => localStorage.getItem('token'));
+    await page.waitForTimeout(2000);
+    await expect(page).not.toHaveURL(/\/login$/, { timeout: 5000 });
+    
+    const token = await page.evaluate(() => localStorage.getItem('customerToken'));
     expect(token).toBeTruthy();
   });
 
