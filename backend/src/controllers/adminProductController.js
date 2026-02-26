@@ -535,15 +535,51 @@ const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
+    // First check if product exists
+    const { data: existingProduct, error: checkError } = await supabase
+      .from('products')
+      .select('id, name, is_active')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error('Error checking product:', checkError);
+      return res.status(500).json({ 
+        message: 'Error checking product existence',
+        error: checkError.message 
+      });
+    }
+
+    if (!existingProduct) {
+      return res.status(404).json({ 
+        message: 'Product not found',
+        productId: id 
+      });
+    }
+
+    // Check if already deleted
+    if (!existingProduct.is_active) {
+      return res.status(400).json({ 
+        message: 'Product is already deleted',
+        productId: id,
+        productName: existingProduct.name
+      });
+    }
+
     // Soft delete
-    const { error } = await supabase
+    const { data: updatedProduct, error: updateError } = await supabase
       .from('products')
       .update({ is_active: false, updated_at: new Date().toISOString() })
-      .eq('id', id);
+      .eq('id', id)
+      .select()
+      .single();
 
-    if (error) {
-      console.error('Error deleting product:', error);
-      return res.status(500).json({ message: 'Error deleting product' });
+    if (updateError) {
+      console.error('Error deleting product:', updateError);
+      return res.status(500).json({ 
+        message: 'Error deleting product',
+        error: updateError.message 
+      });
     }
 
     // Log audit
@@ -554,10 +590,16 @@ const deleteProduct = async (req, res) => {
       entity_id: id
     });
 
-    res.json({ message: 'Product deleted successfully' });
+    res.json({ 
+      message: 'Product deleted successfully',
+      product: updatedProduct
+    });
   } catch (error) {
     console.error('Error in deleteProduct:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message 
+    });
   }
 };
 

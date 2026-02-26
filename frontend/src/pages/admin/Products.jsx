@@ -8,7 +8,7 @@ const Products = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, limit: 50, total: 0 });
-  const [filters, setFilters] = useState({ search: '', category: '', is_active: '' });
+  const [filters, setFilters] = useState({ search: '', category: '', is_active: 'true' });
   const abortControllerRef = useRef(null);
 
   const memoizedFilters = useMemo(() => ({
@@ -126,12 +126,12 @@ const Products = () => {
               onChange={(e) => setFilters({ ...filters, is_active: e.target.value })}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
             >
-              <option value="">Active</option>
+              <option value="true">Active Products</option>
               <option value="false">Inactive (Deleted)</option>
-              <option value="all">All</option>
+              <option value="all">All Products</option>
             </select>
             <button
-              onClick={() => setFilters({ search: '', category: '', is_active: '' })}
+              onClick={() => setFilters({ search: '', category: '', is_active: 'true' })}
               className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               Clear Filters
