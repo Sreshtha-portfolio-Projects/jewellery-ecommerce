@@ -1,0 +1,16 @@
+{
+  "name": "aldorado-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "E2E tests for Aldorado Jewells (Playwright)",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test smoke.spec.js",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "dotenv": "^16.4.5"
+  }
+}
