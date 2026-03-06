@@ -615,7 +615,7 @@ test.describe('Happy Path – Invoice Generation', () => {
     const invoiceBtn = page.getByRole('button', { name: /invoice|download/i });
     const hasInvoice = await invoiceBtn.isVisible({ timeout: 3000 });
     
-    expect(hasInvoice || true).toBeTruthy(); // Pass if invoice exists or shipment created
+    expect(hasInvoice).toBeTruthy();
   });
 
   // HAPPY-012: Admin Downloads Invoice for Any Order
@@ -777,6 +777,7 @@ test.describe('Happy Path – Complete End-to-End Scenarios', () => {
     await page.goto('/cart');
     await waitForPageLoad(page);
     const checkoutBtn = page.getByRole('button', { name: /checkout|proceed/i });
+    await expect(checkoutBtn).toBeVisible({ timeout: 3000 });
     await checkoutBtn.click();
     await waitForPageLoad(page);
 
@@ -827,7 +828,7 @@ test.describe('Happy Path – Complete End-to-End Scenarios', () => {
       const updateBtn = adminPage.getByRole('button', { name: /update|save/i });
       if (await updateBtn.isVisible({ timeout: 2000 })) {
         await updateBtn.click();
-        await page.waitForTimeout(1000);
+        await adminPage.waitForTimeout(1000);
       }
     }
 
@@ -857,7 +858,7 @@ test.describe('Happy Path – Complete End-to-End Scenarios', () => {
 
     // Verify journey completed
     const hasReturnStatus = await page.locator('text=/return.*requested|return.*status/i').isVisible({ timeout: 3000 }).catch(() => false);
-    expect(hasReturnStatus || true).toBeTruthy(); // Pass if return requested or journey completed
+    expect(hasReturnStatus).toBeTruthy();
   });
 
   // HAPPY-016: Multiple Orders in Parallel (simplified)
@@ -907,14 +908,17 @@ test.describe('Happy Path – Complete End-to-End Scenarios', () => {
       await secondProduct.click();
       await waitForPageLoad(page);
       const addBtn = page.getByRole('button', { name: /add to cart/i });
-      await addBtn.click();
-      await page.waitForTimeout(1000);
+      if (await addBtn.isVisible({ timeout: 3000 })) {
+        await addBtn.click();
+        await page.waitForTimeout(1000);
+      }
     }
 
     await page.goto('/cart');
     await waitForPageLoad(page);
     
     const checkoutBtn = page.getByRole('button', { name: /checkout|proceed/i });
+    await expect(checkoutBtn).toBeVisible({ timeout: 3000 });
     await checkoutBtn.click();
     await waitForPageLoad(page);
 
