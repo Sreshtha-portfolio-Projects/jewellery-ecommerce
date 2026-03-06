@@ -32,6 +32,12 @@ npm test
 # Smoke only
 npm run test:smoke
 
+# Happy path tests only
+npx playwright test happy-path.spec.js
+
+# Specific test by ID (e.g. HAPPY-001)
+npx playwright test happy-path.spec.js -g "HAPPY-001"
+
 # With UI (interactive)
 npm run test:ui
 
@@ -41,9 +47,10 @@ npm run test:headed
 
 ## Mapping to manual tests
 
-| Spec file         | Manual test file              | Test IDs      |
-|-------------------|-------------------------------|---------------|
-| `smoke.spec.js`   | `tests/smoke-tests.md`        | SMOKE-001 … 015 |
+| Spec file           | Manual test file              | Test IDs        | Count |
+|---------------------|-------------------------------|-----------------|-------|
+| `smoke.spec.js`     | `tests/smoke-tests.md`        | SMOKE-001 … 015 | 8     |
+| `happy-path.spec.js`| `tests/happy-path-tests.md`   | HAPPY-001 … 018 | 18    |
 
 Add more spec files (e.g. `discount-coupon.spec.js`, `address-management.spec.js`) and implement tests from the corresponding `tests/*.md` files. Keep the same Test ID in the test name for traceability.
 
