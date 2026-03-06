@@ -28,6 +28,10 @@ const login = async (req, res) => {
       .eq('role', 'admin')
       .single();
 
+    console.log('Admin login check for:', authData.user.email);
+    console.log('User ID:', authData.user.id);
+    console.log('Role query result:', { roleData, roleError });
+
     let isAdmin = !roleError && roleData;
 
     // Fallback: Legacy checks for backward compatibility during migration
