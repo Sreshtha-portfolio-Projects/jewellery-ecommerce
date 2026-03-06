@@ -1,0 +1,138 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e7]:
+      - generic [ref=e8]: Aldorado Jewells
+      - generic [ref=e9]: DISCOVER OUR NEW ARRIVALS
+      - generic [ref=e10]:
+        - button "Search" [ref=e12] [cursor=pointer]:
+          - img [ref=e13]
+        - button "Shopping cart" [ref=e15] [cursor=pointer]:
+          - img [ref=e16]
+        - button "Sreshtha" [ref=e19] [cursor=pointer]:
+          - img [ref=e20]
+          - generic [ref=e22]: Sreshtha
+          - img [ref=e23]
+    - navigation [ref=e25]:
+      - generic [ref=e26]:
+        - link "Aldorado Jewells" [ref=e27] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e28]:
+          - link "HOME" [ref=e29] [cursor=pointer]:
+            - /url: /
+          - link "EARRINGS" [ref=e30] [cursor=pointer]:
+            - /url: /products/earrings
+          - link "BRACELETS" [ref=e31] [cursor=pointer]:
+            - /url: /products/bracelets
+          - link "RINGS" [ref=e32] [cursor=pointer]:
+            - /url: /products/rings
+          - link "NECKLACES" [ref=e33] [cursor=pointer]:
+            - /url: /products/necklaces
+          - link "ABOUT US" [ref=e34] [cursor=pointer]:
+            - /url: /about
+  - main [ref=e35]:
+    - generic [ref=e37]:
+      - generic [ref=e38]:
+        - heading "My Account" [level=1] [ref=e39]
+        - paragraph [ref=e40]: Welcome back, Sreshtha
+      - generic [ref=e41]:
+        - complementary [ref=e42]:
+          - navigation [ref=e44]:
+            - link "👤 Profile" [ref=e45] [cursor=pointer]:
+              - /url: /account/profile
+              - generic [ref=e46]: 👤
+              - generic [ref=e47]: Profile
+            - link "📦 Orders" [ref=e48] [cursor=pointer]:
+              - /url: /account/orders
+              - generic [ref=e49]: 📦
+              - generic [ref=e50]: Orders
+            - link "❤️ Wishlist" [ref=e51] [cursor=pointer]:
+              - /url: /account/wishlist
+              - generic [ref=e52]: ❤️
+              - generic [ref=e53]: Wishlist
+            - link "📍 Saved Addresses" [ref=e54] [cursor=pointer]:
+              - /url: /account/addresses
+              - generic [ref=e55]: 📍
+              - generic [ref=e56]: Saved Addresses
+            - generic [ref=e57]:
+              - generic [ref=e58]: 🎫
+              - generic [ref=e59]: Coupons
+              - generic [ref=e60]: Soon
+            - generic [ref=e61]:
+              - generic [ref=e62]: 💬
+              - generic [ref=e63]: Contact Support
+              - generic [ref=e64]: Soon
+            - button "🚪 Logout" [ref=e65] [cursor=pointer]:
+              - generic [ref=e66]: 🚪
+              - generic [ref=e67]: Logout
+        - main [ref=e68]:
+          - generic [ref=e70]:
+            - heading "My Orders" [level=2] [ref=e71]
+            - generic [ref=e72]:
+              - generic [ref=e73]: 📦
+              - paragraph [ref=e74]: You haven't placed any orders yet
+              - link "Start Shopping" [ref=e75] [cursor=pointer]:
+                - /url: /products
+  - contentinfo [ref=e76]:
+    - generic [ref=e79]:
+      - generic [ref=e80]:
+        - generic [ref=e81]: 🚚
+        - heading "Free Shipping" [level=3] [ref=e82]
+        - paragraph [ref=e83]: On orders over $100
+      - generic [ref=e84]:
+        - generic [ref=e85]: ↩️
+        - heading "15 Days Return" [level=3] [ref=e86]
+        - paragraph [ref=e87]: Easy returns
+      - generic [ref=e88]:
+        - generic [ref=e89]: 💬
+        - heading "Customer Support" [level=3] [ref=e90]
+        - paragraph [ref=e91]: 24/7 assistance
+      - generic [ref=e92]:
+        - generic [ref=e93]: 🔒
+        - heading "Secure Payment" [level=3] [ref=e94]
+        - paragraph [ref=e95]: Protected transactions
+    - generic [ref=e97]:
+      - generic [ref=e98]:
+        - heading "GET IN TOUCH" [level=3] [ref=e99]
+        - paragraph [ref=e100]: info@aldoradojewells.com
+      - generic [ref=e101]:
+        - heading "Let's Get In Touch!" [level=3] [ref=e102]
+        - generic [ref=e103]:
+          - textbox "Your Email" [ref=e104]
+          - button "SUBSCRIBE" [ref=e105] [cursor=pointer]
+      - generic [ref=e106]:
+        - heading "SOCIAL MEDIA" [level=3] [ref=e107]
+        - generic [ref=e108]:
+          - link "Instagram" [ref=e109] [cursor=pointer]:
+            - /url: https://www.instagram.com/aldoradojewells
+            - img [ref=e110]
+          - link "Facebook" [ref=e112] [cursor=pointer]:
+            - /url: https://www.facebook.com/aldoradojewells
+            - img [ref=e113]
+          - link "Pinterest" [ref=e115] [cursor=pointer]:
+            - /url: https://www.pinterest.com/aldoradojewells
+            - img [ref=e116]
+    - generic [ref=e120]:
+      - generic [ref=e121]: © 2023 Aldorado Jewells. All rights reserved.
+      - generic [ref=e122]: Aldorado Jewells
+      - generic [ref=e123]:
+        - generic [ref=e124]:
+          - link "SHOP" [ref=e125] [cursor=pointer]:
+            - /url: /products
+          - link "ABOUT US" [ref=e126] [cursor=pointer]:
+            - /url: /about
+          - link "CONTACT US" [ref=e127] [cursor=pointer]:
+            - /url: /contact
+          - link "PRIVACY POLICY" [ref=e128] [cursor=pointer]:
+            - /url: /privacy
+        - generic [ref=e129]:
+          - generic [ref=e130]: Visa
+          - generic [ref=e131]: •
+          - generic [ref=e132]: Mastercard
+          - generic [ref=e133]: •
+          - generic [ref=e134]: Amex
+          - generic [ref=e135]: •
+          - generic [ref=e136]: PayPal
+```

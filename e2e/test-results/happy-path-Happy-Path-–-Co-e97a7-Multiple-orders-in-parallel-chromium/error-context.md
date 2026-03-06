@@ -1,0 +1,142 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e7]:
+      - generic [ref=e8]: Aldorado Jewells
+      - generic [ref=e9]: DISCOVER OUR NEW ARRIVALS
+      - generic [ref=e10]:
+        - button "Search" [ref=e12] [cursor=pointer]:
+          - img [ref=e13]
+        - button "Shopping cart" [ref=e15] [cursor=pointer]:
+          - img [ref=e16]
+        - link "Login" [ref=e18] [cursor=pointer]:
+          - /url: /login
+          - img [ref=e19]
+    - navigation [ref=e21]:
+      - generic [ref=e22]:
+        - link "Aldorado Jewells" [ref=e23] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e24]:
+          - link "HOME" [ref=e25] [cursor=pointer]:
+            - /url: /
+          - link "EARRINGS" [ref=e26] [cursor=pointer]:
+            - /url: /products/earrings
+          - link "BRACELETS" [ref=e27] [cursor=pointer]:
+            - /url: /products/bracelets
+          - link "RINGS" [ref=e28] [cursor=pointer]:
+            - /url: /products/rings
+          - link "NECKLACES" [ref=e29] [cursor=pointer]:
+            - /url: /products/necklaces
+          - link "ABOUT US" [ref=e30] [cursor=pointer]:
+            - /url: /about
+  - main [ref=e31]:
+    - generic [ref=e33]:
+      - button "Back" [ref=e34] [cursor=pointer]:
+        - img [ref=e35]
+        - text: Back
+      - generic [ref=e38]:
+        - img [ref=e42]
+        - generic [ref=e44]:
+          - heading "A beautiful ring with the elegance of diamonds, providing a unique and elegant touch." [level=1] [ref=e45]
+          - generic [ref=e46]:
+            - generic [ref=e47]:
+              - img [ref=e48]
+              - img [ref=e50]
+              - img [ref=e52]
+              - img [ref=e54]
+              - img [ref=e56]
+            - generic [ref=e58]: 0 (0 reviews)
+          - generic [ref=e61]: ₹1,27,211.03
+          - generic [ref=e63]: rings
+          - generic [ref=e64]:
+            - generic [ref=e65]: AL 1000 R
+            - generic [ref=e66]: "Family: KM"
+            - generic [ref=e67]: "Type: RN"
+          - generic [ref=e68]:
+            - generic [ref=e69]:
+              - text: "Gross Weight:"
+              - strong [ref=e70]: 4.6 g
+            - generic [ref=e71]:
+              - text: "Net Weight:"
+              - strong [ref=e72]: 4.85 g
+          - paragraph [ref=e74]: Out of Stock
+          - generic [ref=e75]:
+            - heading "Check Delivery" [level=3] [ref=e76]
+            - generic [ref=e77]:
+              - textbox "Enter pincode" [ref=e78]
+              - button "Check" [disabled] [ref=e79]
+          - generic [ref=e80]:
+            - generic [ref=e81]: "Quantity:"
+            - generic [ref=e82]:
+              - button "-" [disabled] [ref=e83]
+              - spinbutton "Quantity:" [ref=e84]: "1"
+              - button "+" [ref=e85] [cursor=pointer]
+          - generic [ref=e86]:
+            - button "Add to Cart" [disabled] [ref=e87]
+            - button "Buy Now" [disabled] [ref=e88]
+      - generic [ref=e89]:
+        - heading "Customer Reviews" [level=2] [ref=e91]
+        - paragraph [ref=e92]: No reviews yet. Be the first to review!
+  - contentinfo [ref=e93]:
+    - generic [ref=e96]:
+      - generic [ref=e97]:
+        - generic [ref=e98]: 🚚
+        - heading "Free Shipping" [level=3] [ref=e99]
+        - paragraph [ref=e100]: On orders over $100
+      - generic [ref=e101]:
+        - generic [ref=e102]: ↩️
+        - heading "15 Days Return" [level=3] [ref=e103]
+        - paragraph [ref=e104]: Easy returns
+      - generic [ref=e105]:
+        - generic [ref=e106]: 💬
+        - heading "Customer Support" [level=3] [ref=e107]
+        - paragraph [ref=e108]: 24/7 assistance
+      - generic [ref=e109]:
+        - generic [ref=e110]: 🔒
+        - heading "Secure Payment" [level=3] [ref=e111]
+        - paragraph [ref=e112]: Protected transactions
+    - generic [ref=e114]:
+      - generic [ref=e115]:
+        - heading "GET IN TOUCH" [level=3] [ref=e116]
+        - paragraph [ref=e117]: info@aldoradojewells.com
+      - generic [ref=e118]:
+        - heading "Let's Get In Touch!" [level=3] [ref=e119]
+        - generic [ref=e120]:
+          - textbox "Your Email" [ref=e121]
+          - button "SUBSCRIBE" [ref=e122] [cursor=pointer]
+      - generic [ref=e123]:
+        - heading "SOCIAL MEDIA" [level=3] [ref=e124]
+        - generic [ref=e125]:
+          - link "Instagram" [ref=e126] [cursor=pointer]:
+            - /url: https://www.instagram.com/aldoradojewells
+            - img [ref=e127]
+          - link "Facebook" [ref=e129] [cursor=pointer]:
+            - /url: https://www.facebook.com/aldoradojewells
+            - img [ref=e130]
+          - link "Pinterest" [ref=e132] [cursor=pointer]:
+            - /url: https://www.pinterest.com/aldoradojewells
+            - img [ref=e133]
+    - generic [ref=e137]:
+      - generic [ref=e138]: © 2023 Aldorado Jewells. All rights reserved.
+      - generic [ref=e139]: Aldorado Jewells
+      - generic [ref=e140]:
+        - generic [ref=e141]:
+          - link "SHOP" [ref=e142] [cursor=pointer]:
+            - /url: /products
+          - link "ABOUT US" [ref=e143] [cursor=pointer]:
+            - /url: /about
+          - link "CONTACT US" [ref=e144] [cursor=pointer]:
+            - /url: /contact
+          - link "PRIVACY POLICY" [ref=e145] [cursor=pointer]:
+            - /url: /privacy
+        - generic [ref=e146]:
+          - generic [ref=e147]: Visa
+          - generic [ref=e148]: •
+          - generic [ref=e149]: Mastercard
+          - generic [ref=e150]: •
+          - generic [ref=e151]: Amex
+          - generic [ref=e152]: •
+          - generic [ref=e153]: PayPal
+```
