@@ -86,10 +86,7 @@ const getAbandonedCarts = async (req, res) => {
 
     let query = supabase
       .from('abandoned_carts')
-      .select(`
-        *,
-        user:auth.users(email, raw_user_meta_data)
-      `)
+      .select('*')
       .order('last_activity_at', { ascending: false })
       .limit(parseInt(limit));
 
@@ -104,7 +101,29 @@ const getAbandonedCarts = async (req, res) => {
       return res.status(500).json({ message: 'Error fetching abandoned carts' });
     }
 
-    res.json({ abandoned_carts: carts || [] });
+    // Fetch user details separately for each cart
+    const cartsWithUsers = await Promise.all(
+      (carts || []).map(async (cart) => {
+        if (cart.user_id) {
+          try {
+            const { data: userData } = await supabase.auth.admin.getUserById(cart.user_id);
+            return {
+              ...cart,
+              user: userData?.user ? {
+                email: userData.user.email,
+                raw_user_meta_data: userData.user.raw_user_meta_data
+              } : null
+            };
+          } catch (err) {
+            console.error(`Error fetching user ${cart.user_id}:`, err);
+            return cart;
+          }
+        }
+        return cart;
+      })
+    );
+
+    res.json({ abandoned_carts: cartsWithUsers });
   } catch (error) {
     console.error('Error in getAbandonedCarts:', error);
     res.status(500).json({ message: 'Internal server error' });

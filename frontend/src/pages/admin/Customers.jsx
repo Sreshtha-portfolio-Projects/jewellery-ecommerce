@@ -1,48 +1,43 @@
 import { useState, useEffect } from 'react';
+import { adminService } from '../../services/adminService';
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // TODO: Fetch customers from API when endpoint is available
-    setTimeout(() => {
-      setCustomers([
-        {
-          id: '1',
-          name: 'Priya Sharma',
-          email: 'priya@example.com',
-          phone: '+91 9876543210',
-          orders: 5,
-          totalSpent: 125000,
-          joinDate: '2024-01-15',
-          status: 'active',
-        },
-        {
-          id: '2',
-          name: 'Ajay Kumar',
-          email: 'ajay@example.com',
-          phone: '+91 9876543211',
-          orders: 3,
-          totalSpent: 89000,
-          joinDate: '2024-02-10',
-          status: 'active',
-        },
-        {
-          id: '3',
-          name: 'Sneha Patel',
-          email: 'sneha@example.com',
-          phone: '+91 9876543212',
-          orders: 8,
-          totalSpent: 245000,
-          joinDate: '2023-12-20',
-          status: 'premium',
-        },
-      ]);
-      setLoading(false);
-    }, 500);
+    fetchCustomers();
   }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await adminService.getAllUsers();
+      
+      const formattedCustomers = (data.users || []).map(user => ({
+        id: user.id,
+        name: user.email?.split('@')[0] || 'Unknown',
+        email: user.email,
+        phone: user.phone || 'N/A',
+        orders: 0,
+        totalSpent: 0,
+        joinDate: user.created_at,
+        status: user.isAdmin ? 'admin' : 'active',
+        lastSignIn: user.last_sign_in_at,
+        roles: user.roles || []
+      }));
+      
+      setCustomers(formattedCustomers);
+    } catch (err) {
+      console.error('Error fetching customers:', err);
+      setError('Failed to load customers. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
@@ -72,6 +67,22 @@ const Customers = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading customers...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button 
+            onClick={fetchCustomers}
+            className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -143,12 +154,14 @@ const Customers = () => {
                       <td className="px-4 py-3">
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            customer.status === 'premium'
+                            customer.status === 'admin'
+                              ? 'bg-purple-100 text-purple-800'
+                              : customer.status === 'premium'
                               ? 'bg-yellow-100 text-yellow-800'
                               : 'bg-green-100 text-green-800'
                           }`}
                         >
-                          {customer.status === 'premium' ? 'Premium' : 'Active'}
+                          {customer.status === 'admin' ? 'Admin' : customer.status === 'premium' ? 'Premium' : 'Active'}
                         </span>
                       </td>
                       <td className="px-4 py-3">

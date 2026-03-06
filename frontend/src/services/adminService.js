@@ -314,4 +314,25 @@ export const adminService = {
     });
     return response.data;
   },
+
+  // User Management
+  getAllUsers: async () => {
+    const response = await api.get('/admin/users');
+    return response.data;
+  },
+
+  getUserRoles: async (userId) => {
+    const response = await api.get(`/admin/users/${userId}/roles`);
+    return response.data;
+  },
+
+  grantAdminRole: async (userId, notes) => {
+    const response = await api.post(`/admin/users/${userId}/roles/admin`, { notes });
+    return response.data;
+  },
+
+  revokeAdminRole: async (userId) => {
+    const response = await api.delete(`/admin/users/${userId}/roles/admin`);
+    return response.data;
+  },
 };

@@ -1,55 +1,73 @@
 import { useState, useEffect } from 'react';
+import { adminService } from '../../services/adminService';
 
 const AbandonedCarts = () => {
   const [carts, setCarts] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState('active');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // TODO: Fetch abandoned carts from API when endpoint is available
-    // For now, using mock data
-    setTimeout(() => {
-      setCarts([
-        {
-          id: 'CART-001',
-          customer: 'Ajay Kumar',
-          phone: '+91 9876543210',
-          items: 'Diamond Earrings, Gold Chain',
-          value: 67500,
-          lastActivity: '3 hours ago',
-          status: 'pending',
-        },
-        {
-          id: 'CART-002',
-          customer: 'Priya Sharma',
-          phone: '+91 9876543211',
-          items: 'Silver Bracelet',
-          value: 12300,
-          lastActivity: '5 hours ago',
-          status: 'pending',
-        },
-        {
-          id: 'CART-003',
-          customer: 'Raj Mehta',
-          phone: '+91 9876543212',
-          items: 'Gold Ring, Pendant',
-          value: 45200,
-          lastActivity: '1 day ago',
-          status: 'recovered',
-        },
-        {
-          id: 'CART-004',
-          customer: 'Sneha Patel',
-          phone: '+91 9876543213',
-          items: 'Diamond Necklace',
-          value: 89900,
-          lastActivity: '2 days ago',
-          status: 'pending',
-        },
-      ]);
+    fetchAbandonedCarts();
+    fetchStats();
+  }, [selectedTab]);
+
+  const fetchAbandonedCarts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      let status = null;
+      if (selectedTab === 'active') status = 'ACTIVE';
+      else if (selectedTab === 'abandoned') status = 'ABANDONED';
+      else if (selectedTab === 'recovered') status = 'RECOVERED';
+      else if (selectedTab === 'expired') status = 'EXPIRED';
+      
+      const data = await adminService.getAbandonedCarts(status);
+      
+      const formattedCarts = (data.abandoned_carts || []).map(cart => ({
+        id: cart.id,
+        customer: cart.user?.email || 'Guest',
+        phone: cart.user?.raw_user_meta_data?.phone || 'N/A',
+        items: `${cart.item_count} items`,
+        value: parseFloat(cart.cart_value || 0),
+        lastActivity: formatTimeAgo(cart.last_activity_at),
+        status: cart.status.toLowerCase(),
+        rawData: cart
+      }));
+      
+      setCarts(formattedCarts);
+    } catch (err) {
+      console.error('Error fetching abandoned carts:', err);
+      setError('Failed to load abandoned carts. Please try again.');
+    } finally {
       setLoading(false);
-    }, 500);
-  }, []);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const data = await adminService.getAbandonedCartStats();
+      setStats(data);
+    } catch (err) {
+      console.error('Error fetching abandoned cart stats:', err);
+    }
+  };
+
+  const formatTimeAgo = (dateString) => {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    return `${diffDays} days ago`;
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
@@ -60,18 +78,13 @@ const AbandonedCarts = () => {
   };
 
   const tabs = [
-    { id: 'active', label: 'Active', count: carts.filter((c) => c.status === 'pending').length },
-    { id: 'recovered', label: 'Recovered', count: carts.filter((c) => c.status === 'recovered').length },
-    { id: 'expired', label: 'Expired', count: carts.filter((c) => c.status === 'expired').length },
-    { id: 'total', label: 'Total Uses', count: carts.length },
+    { id: 'active', label: 'Active', count: stats?.total_active || 0 },
+    { id: 'abandoned', label: 'Abandoned', count: stats?.total_abandoned || 0 },
+    { id: 'recovered', label: 'Recovered', count: 0 },
+    { id: 'total', label: 'All', count: (stats?.total_active || 0) + (stats?.total_abandoned || 0) },
   ];
 
-  const filteredCarts = carts.filter((cart) => {
-    if (selectedTab === 'active') return cart.status === 'pending';
-    if (selectedTab === 'recovered') return cart.status === 'recovered';
-    if (selectedTab === 'expired') return cart.status === 'expired';
-    return true;
-  });
+  const filteredCarts = carts;
 
   if (loading) {
     return (
@@ -79,6 +92,22 @@ const AbandonedCarts = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading abandoned carts...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button 
+            onClick={fetchAbandonedCarts}
+            className="px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700"
+          >
+            Retry
+          </button>
         </div>
       </div>
     );
@@ -92,49 +121,50 @@ const AbandonedCarts = () => {
       </header>
 
       <div className="p-8">
-        {/* Discount Usage Chart */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-semibold text-gray-900">Discount Usage This Week</h2>
-            <div className="flex gap-2">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setSelectedTab(tab.id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    selectedTab === tab.id
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {tab.label} ({tab.count})
-                </button>
-              ))}
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-sm font-medium text-gray-500 mb-2">Total Abandoned</h3>
+              <p className="text-3xl font-bold text-gray-900">{stats.total_abandoned}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-sm font-medium text-gray-500 mb-2">Active Carts</h3>
+              <p className="text-3xl font-bold text-yellow-600">{stats.total_active}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-sm font-medium text-gray-500 mb-2">Abandoned Value</h3>
+              <p className="text-3xl font-bold text-rose-600">{formatCurrency(stats.abandoned_value)}</p>
+            </div>
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <h3 className="text-sm font-medium text-gray-500 mb-2">Abandonment Rate</h3>
+              <p className="text-3xl font-bold text-gray-900">{stats.abandonment_rate}%</p>
             </div>
           </div>
-          {/* Simple line chart visualization */}
-          <div className="h-64 flex items-end justify-between gap-2">
-            {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => {
-              const height = [12, 8, 4, 15, 20, 28, 24][index];
-              return (
-                <div key={day} className="flex-1 flex flex-col items-center">
-                  <div
-                    className="w-full bg-purple-500 rounded-t transition-all hover:bg-purple-600"
-                    style={{ height: `${(height / 32) * 100}%` }}
-                    title={`${day}: ${height}`}
-                  ></div>
-                  <span className="text-xs text-gray-600 mt-2">{day}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-8">
           {/* Abandoned Cart Table */}
-          <div className="lg:col-span-2">
+          <div>
             <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="font-semibold text-gray-900 mb-6">Abandoned Cart Recovery</h2>
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <h2 className="font-semibold text-gray-900">Abandoned Cart Recovery</h2>
+                <div className="flex gap-2">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setSelectedTab(tab.id)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        selectedTab === tab.id
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {tab.label} ({tab.count})
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-gray-50">
@@ -172,10 +202,16 @@ const AbandonedCarts = () => {
                               className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 cart.status === 'recovered'
                                   ? 'bg-green-100 text-green-800'
-                                  : 'bg-yellow-100 text-yellow-800'
+                                  : cart.status === 'active'
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : cart.status === 'abandoned'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : cart.status === 'expired'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
                               }`}
                             >
-                              {cart.status === 'recovered' ? 'Recovered' : 'Pending'}
+                              {cart.status.charAt(0).toUpperCase() + cart.status.slice(1)}
                             </span>
                           </td>
                           <td className="px-4 py-3">
@@ -197,131 +233,8 @@ const AbandonedCarts = () => {
                 </table>
               </div>
             </div>
-
-            {/* Cart Recovery Performance */}
-            <div className="bg-white rounded-lg shadow-sm p-6 mt-6">
-              <h2 className="font-semibold text-gray-900 mb-6">Cart Recovery Performance</h2>
-              <div className="h-64 flex items-end justify-between gap-2 mb-6">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => {
-                  const greenHeight = [15000, 18000, 12000, 20000, 25000, 30000, 28000][index];
-                  const orangeHeight = [10000, 12000, 8000, 15000, 20000, 25000, 22000][index];
-                  const maxValue = 40000;
-                  return (
-                    <div key={day} className="flex-1 flex flex-col items-center gap-1">
-                      <div className="w-full flex gap-1">
-                        <div
-                          className="flex-1 bg-green-500 rounded-t transition-all hover:bg-green-600"
-                          style={{ height: `${(greenHeight / maxValue) * 100}%` }}
-                          title={`Recovered: ${formatCurrency(greenHeight)}`}
-                        ></div>
-                        <div
-                          className="flex-1 bg-orange-500 rounded-t transition-all hover:bg-orange-600"
-                          style={{ height: `${(orangeHeight / maxValue) * 100}%` }}
-                          title={`Lost: ${formatCurrency(orangeHeight)}`}
-                        ></div>
-                      </div>
-                      <span className="text-xs text-gray-600 mt-2">{day}</span>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="flex gap-3">
-                <button className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2">
-                  <span>💬</span>
-                  <span>Bulk WhatsApp Campaign</span>
-                </button>
-                <button className="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium flex items-center justify-center gap-2">
-                  <span>📧</span>
-                  <span>Email Sequence</span>
-                </button>
-                <button className="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium flex items-center justify-center gap-2">
-                  <span>🔄</span>
-                  <span>Auto Recovery</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="space-y-6">
-            {/* Weekly Sales Chart */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="font-semibold text-gray-900 mb-4">Weekly Sales</h3>
-              <div className="h-48 flex items-end justify-between gap-1">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => {
-                  const height = [8000, 10000, 12000, 9000, 15000, 18000, 16000][index];
-                  const maxValue = 20000;
-                  return (
-                    <div key={day} className="flex-1 flex flex-col items-center">
-                      <div
-                        className="w-full bg-blue-500 rounded-t transition-all hover:bg-blue-600"
-                        style={{ height: `${(height / maxValue) * 100}%` }}
-                        title={`${day}: ${formatCurrency(height)}`}
-                      ></div>
-                      <span className="text-xs text-gray-600 mt-2">{day}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Activity Feed */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                  <span>🔔</span>
-                  <span>Activity Feed</span>
-                </h3>
-                <a href="#" className="text-sm text-blue-600 hover:text-blue-800">
-                  View All
-                </a>
-              </div>
-              <div className="space-y-4">
-                <ActivityItem
-                  title="5 orders pending shipping"
-                  priority="High"
-                  time="2 minutes ago"
-                  action="Take Action"
-                />
-                <ActivityItem
-                  title="Stock low for Rose Gold Ba..."
-                  priority="Medium"
-                  time="15 minutes ago"
-                />
-                <ActivityItem
-                  title="New 10% Offer expiring in 2 d..."
-                  priority="Low"
-                  time="1 hour ago"
-                />
-              </div>
-            </div>
           </div>
         </div>
-      </div>
-    </div>
-  );
-};
-
-const ActivityItem = ({ title, priority, time, action }) => {
-  const priorityColors = {
-    High: 'bg-red-100 text-red-800',
-    Medium: 'bg-yellow-100 text-yellow-800',
-    Low: 'bg-green-100 text-green-800',
-  };
-
-  return (
-    <div className="p-4 bg-gray-50 rounded-lg">
-      <div className="flex items-start justify-between mb-2">
-        <p className="text-sm font-medium text-gray-900">{title}</p>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${priorityColors[priority]}`}>
-          {priority}
-        </span>
-      </div>
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-gray-500">{time}</p>
-        {action && (
-          <button className="text-xs text-blue-600 hover:text-blue-800 font-medium">{action}</button>
-        )}
       </div>
     </div>
   );
