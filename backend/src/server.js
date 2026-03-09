@@ -29,6 +29,14 @@ const adminReturnRoutes = require('./routes/adminReturnRoutes');
 const { cartActivityRouter, adminAbandonedCartRouter } = require('./routes/abandonedCartRoutes');
 const adminMetalRatesRoutes = require('./routes/adminMetalRatesRoutes');
 
+const blogRoutes = require('./modules/blogs/blog.routes');
+const adminBlogRoutes = require('./modules/blogs/adminBlog.routes');
+const pushRoutes = require('./modules/notifications/push.routes');
+const adminPushRoutes = require('./modules/notifications/adminPush.routes');
+const emailRoutes = require('./modules/email/email.routes');
+const adminEmailRoutes = require('./modules/email/adminEmail.routes');
+const adminAutomationRoutes = require('./modules/notifications/adminAutomation.routes');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -148,6 +156,14 @@ app.use('/api/order-intents', orderIntentRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/returns', returnRoutes);
 app.use('/api', cartActivityRouter);
+
+app.use('/api/blogs', blogRoutes);
+app.use('/api/admin/blogs', adminBlogRoutes);
+app.use('/api/push', pushRoutes);
+app.use('/api/admin/push', adminPushRoutes);
+app.use('/api/email', emailRoutes);
+app.use('/api/admin/email', adminEmailRoutes);
+app.use('/api/admin/automation', adminAutomationRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -359,6 +375,13 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  try {
+    const cartAbandonmentWorker = require('./modules/notifications/cartAbandonmentWorker');
+    cartAbandonmentWorker.startWorker();
+  } catch (error) {
+    console.error('Error starting cart abandonment worker:', error);
+  }
 });
 
 module.exports = app;

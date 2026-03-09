@@ -1,6 +1,40 @@
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 
 const Footer = () => {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/email/subscribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email,
+          source: 'newsletter'
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to subscribe');
+
+      setMessage('Subscribed successfully!');
+      setEmail('');
+    } catch (error) {
+      console.error('Error subscribing:', error);
+      setMessage('Failed to subscribe');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <footer className="bg-white">
       {/* Top Footer Bar */}
@@ -43,16 +77,28 @@ const Footer = () => {
           {/* Newsletter */}
           <div className="text-center sm:text-left">
             <h3 className="font-serif text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Let's Get In Touch!</h3>
-            <div className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto sm:mx-0">
+            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto sm:mx-0">
               <input
                 type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="Your Email"
+                required
                 className="flex-1 px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-rose-500"
               />
-              <button className="px-4 sm:px-6 py-2 text-sm sm:text-base bg-rose-600 text-white rounded hover:bg-rose-700 transition-colors whitespace-nowrap">
-                SUBSCRIBE
+              <button 
+                type="submit"
+                disabled={loading}
+                className="px-4 sm:px-6 py-2 text-sm sm:text-base bg-rose-600 text-white rounded hover:bg-rose-700 transition-colors whitespace-nowrap disabled:opacity-50"
+              >
+                {loading ? 'SUBSCRIBING...' : 'SUBSCRIBE'}
               </button>
-            </div>
+            </form>
+            {message && (
+              <p className={`text-xs mt-2 ${message.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
+                {message}
+              </p>
+            )}
           </div>
 
           {/* Social Media */}

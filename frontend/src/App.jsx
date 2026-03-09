@@ -10,6 +10,8 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Privacy from './pages/Privacy';
 import Blog from './pages/Blog';
+import BlogList from './pages/BlogList';
+import BlogDetail from './pages/BlogDetail';
 import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
@@ -40,7 +42,19 @@ import AdminSettings from './pages/admin/Settings';
 import DeliveryZones from './pages/admin/DeliveryZones';
 import Returns from './pages/admin/Returns';
 import MetalRates from './pages/admin/MetalRates';
+import Blogs from './pages/admin/marketing/Blogs';
+import BlogForm from './pages/admin/marketing/BlogForm';
+import EmailCampaigns from './pages/admin/marketing/EmailCampaigns';
+import EmailCampaignForm from './pages/admin/marketing/EmailCampaignForm';
+import PushNotifications from './pages/admin/marketing/PushNotifications';
+import Subscribers from './pages/admin/marketing/Subscribers';
+import Automation from './pages/admin/marketing/Automation';
+import EmailTemplates from './pages/admin/marketing/EmailTemplates';
+import MarketingAnalytics from './pages/admin/marketing/MarketingAnalytics';
 import './App.css';
+
+// Remove unused Blog import since we now use BlogList
+// import Blog from './pages/Blog';
 
 function App() {
   return (
@@ -133,7 +147,15 @@ function App() {
           path="/blog"
           element={
             <MainLayout>
-              <Blog />
+              <BlogList />
+            </MainLayout>
+          }
+        />
+        <Route
+          path="/blog/:slug"
+          element={
+            <MainLayout>
+              <BlogDetail />
             </MainLayout>
           }
         />
@@ -190,6 +212,17 @@ function App() {
           <Route path="delivery-zones" element={<DeliveryZones />} />
           <Route path="returns" element={<Returns />} />
           <Route path="metal-rates" element={<MetalRates />} />
+          <Route path="marketing/analytics" element={<MarketingAnalytics />} />
+          <Route path="marketing/blogs" element={<Blogs />} />
+          <Route path="marketing/blogs/new" element={<BlogForm />} />
+          <Route path="marketing/blogs/edit/:id" element={<BlogForm />} />
+          <Route path="marketing/email-campaigns" element={<EmailCampaigns />} />
+          <Route path="marketing/email-campaigns/new" element={<EmailCampaignForm />} />
+          <Route path="marketing/email-campaigns/edit/:id" element={<EmailCampaignForm />} />
+          <Route path="marketing/push-notifications" element={<PushNotifications />} />
+          <Route path="marketing/subscribers" element={<Subscribers />} />
+          <Route path="marketing/templates" element={<EmailTemplates />} />
+          <Route path="marketing/automation" element={<Automation />} />
         </Route>
       </Routes>
     </Router>

@@ -22,6 +22,7 @@ const Checkout = () => {
   const [couponError, setCouponError] = useState('');
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [subscribeNewsletter, setSubscribeNewsletter] = useState(false);
   const [priceBreakdown, setPriceBreakdown] = useState({
     subtotal: 0,
     discount: 0,
@@ -202,6 +203,24 @@ const Checkout = () => {
     setProcessing(true);
 
     try {
+      if (subscribeNewsletter) {
+        try {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          await fetch(`${import.meta.env.VITE_API_URL}/api/email/subscribe`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              email: user.email,
+              source: 'checkout'
+            })
+          });
+        } catch (error) {
+          console.error('Error subscribing to newsletter:', error);
+        }
+      }
+
       // Step 1: Create order intent (locks inventory and prices)
       const orderIntentData = await orderIntentService.createOrderIntent(
         selectedAddressId,
@@ -526,6 +545,20 @@ const Checkout = () => {
                     <span>₹{priceBreakdown.total.toFixed(2)}</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Newsletter Opt-in */}
+              <div className="flex items-center gap-2 py-3 border-t border-gray-200">
+                <input
+                  type="checkbox"
+                  id="newsletter"
+                  checked={subscribeNewsletter}
+                  onChange={(e) => setSubscribeNewsletter(e.target.checked)}
+                  className="w-4 h-4 text-rose-600 border-gray-300 rounded focus:ring-rose-500"
+                />
+                <label htmlFor="newsletter" className="text-sm text-gray-700 cursor-pointer">
+                  Subscribe to our newsletter for exclusive offers and updates
+                </label>
               </div>
 
               {/* Place Order Button */}

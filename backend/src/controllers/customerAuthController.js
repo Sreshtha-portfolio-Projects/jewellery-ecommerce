@@ -43,6 +43,18 @@ const signup = async (req, res) => {
       { expiresIn: '7d' }
     );
 
+    try {
+      const automationService = require('../modules/notifications/automation.service');
+      await automationService.triggerAutomation('user_signup', {
+        user_id: authData.user.id,
+        email: authData.user.email,
+        name: fullName,
+        discount_code: 'WELCOME10'
+      });
+    } catch (automationError) {
+      console.error('Error triggering signup automation:', automationError);
+    }
+
     res.status(201).json({
       message: 'Account created successfully',
       token,

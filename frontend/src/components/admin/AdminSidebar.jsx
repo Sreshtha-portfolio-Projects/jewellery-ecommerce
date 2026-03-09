@@ -12,6 +12,16 @@ const AdminSidebar = ({ onLogout }) => {
     { path: '/admin/inventory', label: 'Inventory', icon: '📋' },
   ];
 
+  const marketingItems = [
+    { path: '/admin/marketing/analytics', label: 'Analytics', icon: '📊' },
+    { path: '/admin/marketing/blogs', label: 'Blogs', icon: '📝' },
+    { path: '/admin/marketing/email-campaigns', label: 'Email Campaigns', icon: '📧' },
+    { path: '/admin/marketing/push-notifications', label: 'Push Notifications', icon: '🔔' },
+    { path: '/admin/marketing/subscribers', label: 'Subscribers', icon: '👤' },
+    { path: '/admin/marketing/templates', label: 'Email Templates', icon: '📄' },
+    { path: '/admin/marketing/automation', label: 'Automation', icon: '⚡' },
+  ];
+
   const isActive = (path) => location.pathname === path;
 
   return (
@@ -21,7 +31,7 @@ const AdminSidebar = ({ onLogout }) => {
         <p className="text-xs text-gray-500 mt-1">Admin Panel</p>
       </div>
 
-      <nav className="p-4 space-y-2">
+      <nav className="p-4 space-y-2 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
         {menuItems.map((item) => (
           <Link
             key={item.path}
@@ -36,6 +46,26 @@ const AdminSidebar = ({ onLogout }) => {
             <span>{item.label}</span>
           </Link>
         ))}
+
+        <div className="pt-4 mt-4 border-t border-beige-200">
+          <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Marketing
+          </h3>
+          {marketingItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                isActive(item.path)
+                  ? 'bg-rose-50 text-rose-700 font-medium border-l-4 border-rose-600'
+                  : 'text-gray-700 hover:bg-beige-50'
+              }`}
+            >
+              <span className="text-xl">{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </div>
       </nav>
 
       <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-beige-200">
